@@ -155,3 +155,158 @@ val_max_atingido:                  # Tratamento de erro de capacidade maxima
     li    $v1, 0                   # Zera retorno secundario
     jr    $ra                      # Retorna ao chamador
     nop                            # Preenche o delay slot do salto de retorno
+
+# ==============================================================
+# Contrato de addAuto_inserir / addAuto_adicionar:
+# Argumentos:
+#   $a0 = Endereco base do registro do apartamento na memoria.
+#   $a1 = Tipo do veiculo ('c'/'C' = carro, 'm'/'M' = moto).
+#   $a2 = Endereco da string com o modelo (max 31 chars + '\0' = 32B). 0 se vazio.
+#   $a3 = Endereco da string com a placa (max 11 chars + '\0' = 12B). 0 se vazio.
+# Retornos:
+#   $v0 = Codigo de status:
+#          0: Sucesso na insercao do veiculo.
+#         -1: Falha: tipo invalido ou parametro nulo.
+#         -2: Falha: AP com numero maximo de automoveis (vagas esgotadas).
+#   $v1 = Endereco base do slot onde o veiculo foi gravado.
+# Efeitos colaterais:
+#   - Grava tipo (word), modelo (32 bytes com '\0' garantido) e placa (12 bytes
+#     com '\0' garantido) no proximo slot livre (offset 304 + num_veiculos * 48).
+#   - Zera previamente todo o slot (48 bytes) para evitar residuos de memoria.
+#   - Atualiza tipo_veiculo no offset +300 para o tipo normalizado.
+#   - Incrementa o contador num_veiculos no offset +296.
+# Preservacao:
+#   Preserva $s0-$s7 e a integridade da pilha.
+# Compatibilidade:
+#   100% compativel com Delayed Branching ativado (nop em delay slots).
+# ==============================================================
+
+.globl addAuto_inserir             # Torna rotina de insercao visivel globalmente
+.globl addAuto_adicionar           # Alias compativel com nome alternativo
+
+addAuto_adicionar:                 # Ponto de entrada alias
+addAuto_inserir:                   # Ponto de entrada principal
+    addi  $sp, $sp, -32            # Aloca espaco no frame da pilha (32 bytes)
+    sw    $ra, 28($sp)             # Salva o endereco de retorno
+    sw    $s0, 24($sp)             # Salva $s0: guardara endereco base do AP
+    sw    $s1, 20($sp)             # Salva $s1: guardara tipo normalizado
+    sw    $s2, 16($sp)             # Salva $s2: guardara ponteiro da string modelo
+    sw    $s3, 12($sp)             # Salva $s3: guardara ponteiro da string placa
+    sw    $s4, 8($sp)              # Salva $s4: guardara endereco do slot alocado
+
+    move  $s0, $a0                 # Preserva endereco base do AP em $s0
+    move  $s2, $a2                 # Preserva ponteiro da string modelo em $s2
+    move  $s3, $a3                 # Preserva ponteiro da string placa em $s3
+
+    # Passo 1: Validar capacidade e tipo usando addAuto_validar_capacidade
+    # $a0 ja contem o endereco base do AP; $a1 ja contem o tipo do automovel
+    jal   addAuto_validar_capacidade # Executa validacao das regras do condominio
+    nop                            # Preenche o delay slot da chamada
+
+    bne   $v0, $zero, ins_falha    # Se retorno != 0, propaga codigo de erro
+    nop                            # Preenche o delay slot do desvio condicional
+
+    # Passo 2: Validacao teve sucesso (0) -> $v1 contem tipo normalizado ('c' ou 'm')
+    move  $s1, $v1                 # Salva o tipo normalizado em $s1
+
+    # Passo 3: Localizar o proximo slot de veiculo livre no AP
+    # endereco_slot = AP + 304 + (num_veiculos * 48)
+    lw    $t0, AP_OFF_NUM_VEICULOS($s0) # Carrega contagem atual de veiculos (0, 1 ou 2)
+    li    $t1, VEIC_SLOT_SIZE      # Carrega tamanho do slot de veiculo (48 bytes)
+    mul   $t2, $t0, $t1            # Deslocamento relativo = num_veiculos * 48
+    addiu $s4, $s0, AP_OFF_VEICULOS # Endereco base do vetor de veiculos (offset 304)
+    addu  $s4, $s4, $t2            # $s4 = endereco inicial do novo slot de veiculo
+
+    # Passo 4: Limpar o slot inteiro de 48 bytes (12 words) com zeros
+    sw    $zero, 0($s4)            # Zera word 0 (+0 a +3: tipo)
+    sw    $zero, 4($s4)            # Zera word 1 (+4 a +7: modelo)
+    sw    $zero, 8($s4)            # Zera word 2 (+8 a +11: modelo)
+    sw    $zero, 12($s4)           # Zera word 3 (+12 a +15: modelo)
+    sw    $zero, 16($s4)           # Zera word 4 (+16 a +19: modelo)
+    sw    $zero, 20($s4)           # Zera word 5 (+20 a +23: modelo)
+    sw    $zero, 24($s4)           # Zera word 6 (+24 a +27: modelo)
+    sw    $zero, 28($s4)           # Zera word 7 (+28 a +31: modelo)
+    sw    $zero, 32($s4)           # Zera word 8 (+32 a +35: modelo)
+    sw    $zero, 36($s4)           # Zera word 9 (+36 a +39: placa)
+    sw    $zero, 40($s4)           # Zera word 10 (+40 a +43: placa)
+    sw    $zero, 44($s4)           # Zera word 11 (+44 a +47: placa)
+
+    # Passo 5: Gravar o tipo de veiculo no offset 0 do slot
+    sw    $s1, VEIC_OFF_TIPO($s4)  # Grava tipo normalizado ('c' ou 'm') na posicao +0
+
+    # Passo 6: Copiar modelo para o slot (+4 ate +35, max 32 bytes com '\0' garantido)
+    beq   $s2, $zero, ins_copiar_placa # Se ponteiro de modelo for nulo, mantem zerado
+    nop                            # Preenche o delay slot do desvio condicional
+
+    li    $t0, 0                   # Inicializa indice de copia do modelo i = 0
+    li    $t1, 31                  # Limite maximo de caracteres uteis para modelo (31)
+ins_copia_mod_loop:
+    bge   $t0, $t1, ins_copia_mod_fim # Se atingiu 31 caracteres, encerra copia
+    nop                            # Preenche o delay slot do desvio condicional
+
+    addu  $t2, $s2, $t0            # Endereco do byte atual na string de origem ($s2 + i)
+    lbu   $t3, 0($t2)              # Carrega byte da string modelo de origem
+    beq   $t3, $zero, ins_copia_mod_fim # Se encontrou o terminador nulo, encerra
+    nop                            # Preenche o delay slot do desvio condicional
+
+    addu  $t4, $s4, $t0            # Endereco relativo no destino ($s4 + i)
+    sb    $t3, VEIC_OFF_MODELO($t4) # Grava byte no campo modelo do slot (+4)
+    addiu $t0, $t0, 1              # Incrementa indice i = i + 1
+    j     ins_copia_mod_loop       # Itera para o proximo caractere
+    nop                            # Preenche o delay slot do salto incondicional
+
+ins_copia_mod_fim:
+    addu  $t4, $s4, $t0            # Calcula posicao do terminador nulo no buffer
+    sb    $zero, VEIC_OFF_MODELO($t4) # Assegura terminador nulo no modelo
+
+ins_copiar_placa:                  # Passo 7: Copiar placa (+36 ate +47, max 12 bytes)
+    beq   $s3, $zero, ins_atualizar_cabecalho # Se ponteiro de placa for nulo, mantem zerado
+    nop                            # Preenche o delay slot do desvio condicional
+
+    li    $t0, 0                   # Inicializa indice de copia da placa j = 0
+    li    $t1, 11                  # Limite maximo de caracteres uteis para placa (11)
+ins_copia_plc_loop:
+    bge   $t0, $t1, ins_copia_plc_fim # Se atingiu 11 caracteres, encerra copia
+    nop                            # Preenche o delay slot do desvio condicional
+
+    addu  $t2, $s3, $t0            # Endereco do byte atual na placa de origem ($s3 + j)
+    lbu   $t3, 0($t2)              # Carrega byte da string placa de origem
+    beq   $t3, $zero, ins_copia_plc_fim # Se encontrou o terminador nulo, encerra
+    nop                            # Preenche o delay slot do desvio condicional
+
+    addu  $t4, $s4, $t0            # Endereco relativo no destino ($s4 + j)
+    sb    $t3, VEIC_OFF_PLACA($t4) # Grava byte no campo placa do slot (+36)
+    addiu $t0, $t0, 1              # Incrementa indice j = j + 1
+    j     ins_copia_plc_loop       # Itera para o proximo caractere
+    nop                            # Preenche o delay slot do salto incondicional
+
+ins_copia_plc_fim:
+    addu  $t4, $s4, $t0            # Calcula posicao do terminador nulo no buffer
+    sb    $zero, VEIC_OFF_PLACA($t4) # Assegura terminador nulo na placa
+
+ins_atualizar_cabecalho:           # Passo 8: Atualizar contadores e tipo no AP
+    sw    $s1, AP_OFF_TIPO_VEICULO($s0) # Atualiza tipo_veiculo no registro do AP (offset 300)
+    lw    $t0, AP_OFF_NUM_VEICULOS($s0) # Carrega quantidade atual de veiculos
+    addiu $t0, $t0, 1              # Incrementa contagem de veiculos (+1)
+    sw    $t0, AP_OFF_NUM_VEICULOS($s0) # Grava novo num_veiculos no AP (offset 296)
+
+    # Retorno de sucesso
+    li    $v0, 0                   # Define codigo de retorno 0 (Sucesso)
+    move  $v1, $s4                 # Retorna em $v1 o endereco base do slot inserido
+    j     ins_finalizar            # Salta para restauracao de contexto
+    nop                            # Preenche o delay slot do salto incondicional
+
+ins_falha:                         # Tratamento de erro propagado pela validacao
+    # $v0 ja contem o codigo de erro (-1 ou -2)
+    li    $v1, 0                   # Zera retorno de endereco
+
+ins_finalizar:                     # Epilogo: restauracao de contexto e retorno
+    lw    $s4, 8($sp)              # Restaura registrador salvo $s4
+    lw    $s3, 12($sp)             # Restaura registrador salvo $s3
+    lw    $s2, 16($sp)             # Restaura registrador salvo $s2
+    lw    $s1, 20($sp)             # Restaura registrador salvo $s1
+    lw    $s0, 24($sp)             # Restaura registrador salvo $s0
+    lw    $ra, 28($sp)             # Restaura registrador de retorno $ra
+    addi  $sp, $sp, 32             # Desaloca o espaco do frame da pilha
+    jr    $ra                      # Retorna ao procedimento chamador
+    nop                            # Preenche o delay slot do retorno
