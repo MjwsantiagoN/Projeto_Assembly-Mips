@@ -170,3 +170,151 @@ busca_err_param:
     jr    $ra                          # Retorna ao procedimento chamador
     nop                                # Preenche o delay slot do salto de retorno
 
+# ==============================================================
+# Rotina de remocao com compactacao e atualizacao do cabecalho
+# ==============================================================
+.globl rmvAuto_remover                 # Torna rotina principal de remocao visivel globalmente
+.globl rmvAuto_excluir                 # Torna alias alternativo visivel globalmente
+
+rmvAuto_excluir:                       # Ponto de entrada alias compativel
+rmvAuto_remover:                       # Ponto de entrada da rotina principal de remocao
+    beqz  $a0, rmv_err_param_direto    # Rejeita imediatamente com -2 se endereco do AP for nulo
+    nop                                # Preenche o delay slot do desvio condicional
+
+    beqz  $a1, rmv_err_param_direto    # Rejeita imediatamente com -2 se ponteiro da placa for nulo
+    nop                                # Preenche o delay slot do desvio condicional
+
+    addiu $sp, $sp, -32                # Aloca 32 bytes no frame da pilha para preservacao de contexto
+    sw    $ra, 28($sp)                 # Salva registrador de retorno na pilha
+    sw    $s0, 24($sp)                 # Salva registrador $s0 (preservara endereco base do AP)
+    sw    $s1, 20($sp)                 # Salva registrador $s1 (preservara ponteiro da string da placa)
+    sw    $s2, 16($sp)                 # Salva registrador $s2 (armazenara indice do slot encontrado)
+    sw    $s3, 12($sp)                 # Salva registrador $s3 (armazenara quantidade atual num_veiculos)
+    sw    $s4, 8($sp)                  # Salva registrador $s4 (indice do laco de translacao de slots)
+
+    move  $s0, $a0                     # Preserva endereco base do AP em $s0
+    move  $s1, $a1                     # Preserva ponteiro da string da placa em $s1
+
+    lw    $s3, RMV_AP_OFF_NUM_VEICULOS($s0) # Carrega contagem atual de veiculos do AP (+296)
+
+    # Passo 1: Localizar o automovel no registro usando rmvAuto_busca_placa
+    move  $a0, $s0                     # Configura argumento $a0 = endereco base do AP
+    move  $a1, $s1                     # Configura argumento $a1 = ponteiro da placa procurada
+    jal   rmvAuto_busca_placa          # Executa busca case-insensitive por placa
+    nop                                # Preenche o delay slot da chamada
+
+    bltz  $v0, rmv_falha_busca         # Se busca retornar codigo negativo (< 0), propaga erro sem alterar AP
+    nop                                # Preenche o delay slot do desvio condicional
+
+    move  $s2, $v0                     # $s2 recebe o indice k do veiculo encontrado (0, 1 ou 2)
+
+    # Passo 2: Compactacao de slots (se o veiculo removido nao for o ultimo do array)
+    # Laco translada slots k+1 ate N-1 uma posicao para a esquerda: slot[j] <- slot[j+1]
+    move  $s4, $s2                     # Inicializa variavel de controle do laco: j = k
+    addiu $t0, $s3, -1                 # $t0 = N - 1 (limite maximo para indice j)
+
+rmv_compact_loop:
+    bge   $s4, $t0, rmv_limpar_ultimo_slot # Se j >= N - 1, translacao concluiu; passa a limpeza do ultimo slot
+    nop                                # Preenche o delay slot do desvio condicional
+
+    # Calcula endereco do slot destino j: AP + 304 + (j * 48)
+    li    $t1, RMV_VEIC_SLOT_SIZE      # Carrega tamanho do slot (48 bytes)
+    mul   $t2, $s4, $t1                # Calcula deslocamento do slot destino: j * 48
+    addiu $t3, $s0, RMV_AP_OFF_VEICULOS # Endereco base do array de veiculos (+304)
+    addu  $t3, $t3, $t2                # $t3 = endereco absoluto do slot destino j
+
+    # Calcula endereco do slot origem j+1: endereco do slot j + 48
+    addu  $t4, $t3, $t1                # $t4 = endereco absoluto do slot origem j + 1
+
+    # Copia as 12 words (48 bytes) do slot origem j+1 para o slot destino j
+    lw    $t5, 0($t4)                  # Le word 0 (+0: tipo do automovel)
+    sw    $t5, 0($t3)                  # Grava word 0 no slot destino
+    lw    $t5, 4($t4)                  # Le word 1 (+4 a +7: modelo)
+    sw    $t5, 4($t3)                  # Grava word 1 no slot destino
+    lw    $t5, 8($t4)                  # Le word 2 (+8 a +11: modelo)
+    sw    $t5, 8($t3)                  # Grava word 2 no slot destino
+    lw    $t5, 12($t4)                 # Le word 3 (+12 a +15: modelo)
+    sw    $t5, 12($t3)                 # Grava word 3 no slot destino
+    lw    $t5, 16($t4)                 # Le word 4 (+16 a +19: modelo)
+    sw    $t5, 16($t3)                 # Grava word 4 no slot destino
+    lw    $t5, 20($t4)                 # Le word 5 (+20 a +23: modelo)
+    sw    $t5, 20($t3)                 # Grava word 5 no slot destino
+    lw    $t5, 24($t4)                 # Le word 6 (+24 a +27: modelo)
+    sw    $t5, 24($t3)                 # Grava word 6 no slot destino
+    lw    $t5, 28($t4)                 # Le word 7 (+28 a +31: modelo)
+    sw    $t5, 28($t3)                 # Grava word 7 no slot destino
+    lw    $t5, 32($t4)                 # Le word 8 (+32 a +35: modelo)
+    sw    $t5, 32($t3)                 # Grava word 8 no slot destino
+    lw    $t5, 36($t4)                 # Le word 9 (+36 a +39: placa)
+    sw    $t5, 36($t3)                 # Grava word 9 no slot destino
+    lw    $t5, 40($t4)                 # Le word 10 (+40 a +43: placa)
+    sw    $t5, 40($t3)                 # Grava word 10 no slot destino
+    lw    $t5, 44($t4)                 # Le word 11 (+44 a +47: placa)
+    sw    $t5, 44($t3)                 # Grava word 11 no slot destino
+
+    addiu $s4, $s4, 1                  # Incrementa indice de iteracao j (j = j + 1)
+    j     rmv_compact_loop             # Itera para o proximo slot da fila
+    nop                                # Preenche o delay slot do salto incondicional
+
+rmv_limpar_ultimo_slot:
+    # Passo 3: Limpeza completa do ultimo slot ocupado anteriormente (indice N - 1)
+    # Garante que nao restem dados fantasmas ou duplicados na memoria liberada
+    addiu $t0, $s3, -1                 # $t0 = N - 1 (indice do slot desocupado)
+    li    $t1, RMV_VEIC_SLOT_SIZE      # Carrega tamanho do slot (48 bytes)
+    mul   $t2, $t0, $t1                # Calcula deslocamento do slot: (N - 1) * 48
+    addiu $t3, $s0, RMV_AP_OFF_VEICULOS # Endereco base do array de veiculos (+304)
+    addu  $t3, $t3, $t2                # $t3 = endereco absoluto do slot liberado (N - 1)
+
+    # Zera integralmente as 12 words (48 bytes) do slot liberado
+    sw    $zero, 0($t3)                # Zera word 0 (+0: tipo)
+    sw    $zero, 4($t3)                # Zera word 1 (+4 a +7: modelo)
+    sw    $zero, 8($t3)                # Zera word 2 (+8 a +11: modelo)
+    sw    $zero, 12($t3)               # Zera word 3 (+12 a +15: modelo)
+    sw    $zero, 16($t3)               # Zera word 4 (+16 a +19: modelo)
+    sw    $zero, 20($t3)               # Zera word 5 (+20 a +23: modelo)
+    sw    $zero, 24($t3)               # Zera word 6 (+24 a +27: modelo)
+    sw    $zero, 28($t3)               # Zera word 7 (+28 a +31: modelo)
+    sw    $zero, 32($t3)               # Zera word 8 (+32 a +35: modelo)
+    sw    $zero, 36($t3)               # Zera word 9 (+36 a +39: placa)
+    sw    $zero, 40($t3)               # Zera word 10 (+40 a +43: placa)
+    sw    $zero, 44($t3)               # Zera word 11 (+44 a +47: placa)
+
+    # Passo 4: Atualizar contador num_veiculos no registro do AP (offset +296)
+    addiu $t6, $s3, -1                 # Decrementa contador de veiculos (N_novo = N - 1)
+    sw    $t6, RMV_AP_OFF_NUM_VEICULOS($s0) # Grava novo num_veiculos no AP (+296)
+
+    # Passo 5: Atualizar tipo_veiculo no registro do AP (offset +300)
+    # Se num_veiculos chegou a 0, garagem ficou desocupada: tipo_veiculo deve ser resetado para 0
+    bnez  $t6, rmv_finalizar_sucesso   # Se ainda restam veiculos (novo contador > 0), tipo permanece inalterado
+    nop                                # Preenche o delay slot do desvio condicional
+
+    sw    $zero, RMV_AP_OFF_TIPO_VEICULO($s0) # Reseta tipo_veiculo para 0 (garagem totalmente vazia)
+
+rmv_finalizar_sucesso:
+    li    $v0, 0                       # Define codigo de retorno 0 (Sucesso na remocao e compactacao)
+    li    $v1, 0                       # Zera retorno secundario
+    j     rmv_restaurar_epilogo        # Salta para restauracao de contexto e retorno
+    nop                                # Preenche o delay slot do salto incondicional
+
+rmv_falha_busca:
+    # $v0 ja contem o codigo de erro retornado pela busca (-1 ou -2)
+    li    $v1, 0                       # Zera retorno secundario
+    j     rmv_restaurar_epilogo        # Salta para restauracao de contexto
+    nop                                # Preenche o delay slot do salto incondicional
+
+rmv_restaurar_epilogo:
+    lw    $s4, 8($sp)                  # Restaura registrador salvo $s4
+    lw    $s3, 12($sp)                 # Restaura registrador salvo $s3
+    lw    $s2, 16($sp)                 # Restaura registrador salvo $s2
+    lw    $s1, 20($sp)                 # Restaura registrador salvo $s1
+    lw    $s0, 24($sp)                 # Restaura registrador salvo $s0
+    lw    $ra, 28($sp)                 # Restaura registrador de retorno $ra
+    addiu $sp, $sp, 32                 # Desaloca espaco no frame da pilha
+    jr    $ra                          # Retorna ao procedimento chamador
+    nop                                # Preenche o delay slot do salto de retorno
+
+rmv_err_param_direto:
+    li    $v0, -2                      # Define codigo de retorno -2 (parametro nulo)
+    li    $v1, 0                       # Zera retorno secundario
+    jr    $ra                          # Retorna diretamente sem acessar a pilha
+    nop                                # Preenche o delay slot do salto de retorno
