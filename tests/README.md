@@ -87,20 +87,20 @@ Os nomes e veiculos sao ficticios e criados pelo proprio teste, sem chamar os ca
 
 Este programa usa o terminal padrao do MARS somente para demonstrar e informar resultados. Nao cria um shell paralelo, nao define a tabela global do projeto, nao salva arquivos e nao comprova a integracao do comando `limparAp --AP` com MMIO. Os testes anteriores continuam necessarios para verificar os contratos das auxiliares.
 
-## Teste da consulta individual
+## Teste da consulta individual simplificada
 
-`infoAp_executar_teste.asm` verifica a consulta individual por numero de AP e sua saida completa, usando a proposta de contrato documentada em `docs/contrato_apartamentos.md`. O teste cria os dados ficticios e fornece um escritor que captura texto; nao chama o shell nem os cadastros dos colegas.
+`infoAp_executar_teste.asm` verifica a saida completa com apartamentos ficticios. A consulta usa chamadas diretas a `ap_imprimirTexto`; o programa de teste define essa funcao para capturar texto. O modulo real de MMIO e testado separadamente.
 
-Executar separadamente dos testes anteriores, na raiz do repositorio:
+Na raiz do repositorio:
 
 ```text
 java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/infoAp_executar_teste.asm
 java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/infoAp_executar_teste.asm
 ```
 
-O resultado esperado nos dois modos e `PASS: infoAp_executar (24 cenarios)` com codigo zero. Erros de montagem, simulacao ou verificacao devem terminar com codigo nao zero. Atingir o limite de instrucoes sem PASS tambem indica falha. As primeiras quatro consultas sao exibidas no terminal depois da comparacao exata com o texto esperado.
+O resultado esperado e `PASS: infoAp_executar (21 cenarios)`, com codigo zero. Atingir o limite sem PASS ou terminar com codigo diferente de zero indica falha. A opcao Assemble all files in directory deve ficar desmarcada na interface grafica.
 
-Os cenarios cobrem:
+Cenarios:
 
 1. AP vazio.
 2. morador sem veiculo.
@@ -111,24 +111,54 @@ Os cenarios cobrem:
 7. passo insuficiente.
 8. passo desalinhado.
 9. base desalinhada.
-10. escritor nulo.
-11. moradores acima do limite.
-12. veiculos acima dos slots.
-13. tipo carro com dois veiculos.
-14. nome no limite.
-15. tabela compacta.
-16. escritor desalinhado.
-17. garagem residual em AP vazio.
-18. moradores negativos.
-19. veiculos negativos.
-20. tipo geral desconhecido.
-21. nome sem terminador.
-22. AP zero.
-23. AP negativo.
-24. Escrita nos enderecos MMIO com disponibilidade simulada.
+10. moradores acima do limite.
+11. veiculos acima dos slots.
+12. tipo carro com dois veiculos.
+13. nome no limite.
+14. tabela compacta.
+15. garagem residual em AP vazio.
+16. moradores negativos.
+17. veiculos negativos.
+18. tipo geral desconhecido.
+19. nome sem terminador.
+20. AP zero.
+21. AP negativo.
 
-Todos os cenarios de consulta comparam a saida completa, o retorno e a preservacao dos quatro argumentos, oito registradores salvos e pilha. Um snapshot confere todos os 12288 bytes da tabela ficticia e de suas reservas, e sentinelas protegem tabela e captura. Os cenarios com escritor valido usam uma captura que ocupa a area de argumentos e sobrescreve temporarios, argumentos, retornos e HI/LO, testando o contrato de chamada.
+O teste compara todas as linhas e o retorno, confere os quatro argumentos e todos os registradores salvos, verifica a pilha e compara os 12288 bytes da tabela e reservas com um snapshot anterior. Sentinelas protegem tabela e captura. A impressao de teste preserva argumentos, salvos e pilha, mas altera temporarios, retornos e HI/LO.
 
-O teste de MMIO sinaliza o bit de disponibilidade diretamente na memoria do simulador e verifica o caractere final no endereco de dados. Nao valida a janela grafica do dispositivo, teclado ou o shell integrado. Para uso real, conectar o Keyboard and Display MMIO Simulator e passar o endereco de `infoAp_escreverMMIO` como escritor.
+## Teste da saida MMIO simplificada
 
-A consulta ainda usa uma proposta de nomes em seis espacos contiguos de 48 bytes. O grupo precisa aprovar ou ajustar esse contrato antes da integracao. A opcao `infoAp --all` ficara em uma entrega separada.
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/saidaApMMIO_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/saidaApMMIO_teste.asm
+```
+
+Resultado esperado: `PASS: saidaApMMIO (3 cenarios)`.
+
+1. Texto ABC sem limite: o ultimo caractere escrito e C.
+2. Texto ABC com limite dois: o ultimo caractere escrito e B.
+3. Texto vazio: nenhum novo caractere e enviado.
+
+A disponibilidade do display e simulada diretamente no registrador de controle. Isso verifica os enderecos e o limite de leitura, mas nao substitui o teste com o dispositivo grafico conectado ao shell.
+
+O contrato dos nomes continua como proposta em seis espacos contiguos de 48 bytes. Para estudar as rotinas, consultar `docs/guia_apresentacao.md`.
+
+## Teste de infoAp --all
+
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/infoApTodos_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/infoApTodos_teste.asm
+```
+
+Ambos devem terminar com `PASS: infoAp_listarTodos (8 cenarios)` e codigo zero. Os casos verificam os 24 APs vazios com registros fisicamente invertidos e passos de 512 e 448 bytes, uma tabela com AP ocupado, base nula, passo insuficiente, passo desalinhado, ID ausente e contador invalido. A referencia compara o texto integral, inclusive ordem e quebras de linha. Confere argumentos, oito registradores salvos, pilha, todos os 12288 bytes reservados e sentinelas. A captura altera temporarios e HI/LO deliberadamente.
+
+## Teste dos comandos de apartamentos integrados
+
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/comandosAp_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/comandosAp_teste.asm
+```
+
+Resultado esperado: `PASS: comandosAp (14 cenarios)` e codigo zero. Inclui a tabela e o interpretador reais e substitui somente a saida MMIO por captura. Verifica texto completo, consulta com morador e carro, limpeza incluindo residuos, listagem dos 24 APs, APs invalidos, sintaxe, argumento vazio, argumento extra, texto numerico longo, sinal, zero inicial e ultimo AP. Compara a tabela inteira com uma referencia independente e confere argumentos, oito registradores salvos, pilha e limites da captura.
+
+O programa real pode ser montado com `java -jar Mars4_5.jar nc a ae1 src/main.asm`. Para executar interativamente, abrir no MARS e conectar o simulador MMIO. Ver `docs/integracao_apartamentos.md` e `docs/estudo_rapido.md`.
