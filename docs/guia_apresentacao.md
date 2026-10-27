@@ -2,7 +2,7 @@
 
 Este guia explica a limpeza e a consulta individual de apartamentos para quem está começando em Assembly MIPS. O objetivo é acompanhar os endereços, os contadores e as chamadas de função, conseguindo explicar o que muda na memória e o que permanece intacto.
 
-A lógica foi testada isoladamente no MARS. O formato dos moradores ainda é uma proposta para revisão do grupo, e o interpretador do shell ainda precisa chamar essas rotinas. Não apresente a demonstração isolada como se o sistema completo já estivesse integrado.
+A lógica foi testada no MARS. Há testes isolados e uma integração dos comandos de apartamentos em `src/main.asm`, com teclado e display MMIO. O formato dos moradores ainda precisa de acordo com o grupo. Cadastros, administração e persistência não estão integrados nesse ponto de entrada. Consulte `docs/integracao_apartamentos.md` para os limites e a incompatibilidade encontrada no PR de moradores.
 
 ## Uma explicação inicial de trinta segundos
 
@@ -257,7 +257,7 @@ Uma sequência curta de apresentação:
 
 O teste de consulta inclui uma função chamada `ap_imprimirTexto` que guarda texto em um buffer para compará-lo com a saída esperada. O programa real usa a implementação de `saidaApMMIO.asm`. São programas montados separadamente, sem duas definições da função no mesmo programa.
 
-`saidaApMMIO_teste.asm` usa disponibilidade simulada no controle do display e confere o último caractere enviado, o limite e o caso de texto vazio. Ele não captura a sequência inteira de caracteres nem comprova a janela gráfica conectada ao shell real. Para a integração real, o futuro `main` deve incluir a consulta e a saída MMIO e conectar o simulador do dispositivo.
+`saidaApMMIO_teste.asm` usa disponibilidade simulada no controle do display e confere o último caractere enviado, o limite e o caso de texto vazio. Ele não captura a sequência inteira de caracteres nem comprova a janela gráfica conectada ao shell real. O `src/main.asm` inclui os módulos necessários; para execução interativa, conecte o simulador do dispositivo. A validação adicional do programa completo está descrita em `docs/integracao_apartamentos.md`.
 
 ## Perguntas para praticar antes da apresentação
 
@@ -277,7 +277,7 @@ O teste de consulta inclui uma função chamada `ap_imprimirTexto` que guarda te
 
 **O layout dos moradores já é o oficial do grupo?** Não. É uma proposta documentada. A parte da garagem mantém os offsets publicados por Brenno; a integração dos moradores precisa de acordo.
 
-**O comando digitado já funciona no shell?** As funções isoladas estão testadas. O shell ainda precisa reconhecer os comandos, converter o número e passar a tabela e o passo para nossas funções.
+**O comando digitado já funciona no shell?** O `src/main.asm` desta entrega reconhece os três comandos de apartamentos e usa MMIO. A integração dos comandos dos colegas e a persistência ainda precisam ser concluídas pelo grupo.
 
 ## Roteiro de estudo
 

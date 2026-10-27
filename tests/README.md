@@ -151,3 +151,14 @@ java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/infoApTodos_teste.asm
 ```
 
 Ambos devem terminar com `PASS: infoAp_listarTodos (8 cenarios)` e codigo zero. Os casos verificam os 24 APs vazios com registros fisicamente invertidos e passos de 512 e 448 bytes, uma tabela com AP ocupado, base nula, passo insuficiente, passo desalinhado, ID ausente e contador invalido. A referencia compara o texto integral, inclusive ordem e quebras de linha. Confere argumentos, oito registradores salvos, pilha, todos os 12288 bytes reservados e sentinelas. A captura altera temporarios e HI/LO deliberadamente.
+
+## Teste dos comandos de apartamentos integrados
+
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/comandosAp_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/comandosAp_teste.asm
+```
+
+Resultado esperado: `PASS: comandosAp (14 cenarios)` e codigo zero. Inclui a tabela e o interpretador reais e substitui somente a saida MMIO por captura. Verifica texto completo, consulta com morador e carro, limpeza incluindo residuos, listagem dos 24 APs, APs invalidos, sintaxe, argumento vazio, argumento extra, texto numerico longo, sinal, zero inicial e ultimo AP. Compara a tabela inteira com uma referencia independente e confere argumentos, oito registradores salvos, pilha e limites da captura.
+
+O programa real pode ser montado com `java -jar Mars4_5.jar nc a ae1 src/main.asm`. Para executar interativamente, abrir no MARS e conectar o simulador MMIO. Ver `docs/integracao_apartamentos.md` e `docs/estudo_rapido.md`.
