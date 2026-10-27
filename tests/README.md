@@ -1,4 +1,4 @@
-# Teste isolado da limpeza de dados
+# Testes isolados das rotinas de apartamentos
 
 `limparAp_zerarRegiao_teste.asm` verifica a auxiliar `limparAp_zerarRegiao`, definida em `src/apartamento/limparAp.asm`. O teste usa sua propria memoria e nao depende do shell nem de um layout definitivo de apartamento.
 
@@ -86,3 +86,49 @@ Em cada cenario sao conferidos todos os bytes dos 24 registros, preservacao dos 
 Os nomes e veiculos sao ficticios e criados pelo proprio teste, sem chamar os cadastros do grupo. A referencia reserva 512 bytes por registro, mas os cenarios tambem montam uma tabela com passo de 448. Os espacos de 48 bytes usados para nomes no exemplo nao sao uma decisao sobre o formato definitivo do cadastro de moradores.
 
 Este programa usa o terminal padrao do MARS somente para demonstrar e informar resultados. Nao cria um shell paralelo, nao define a tabela global do projeto, nao salva arquivos e nao comprova a integracao do comando `limparAp --AP` com MMIO. Os testes anteriores continuam necessarios para verificar os contratos das auxiliares.
+
+## Teste da consulta individual
+
+`infoAp_executar_teste.asm` verifica a consulta individual por numero de AP e sua saida completa, usando a proposta de contrato documentada em `docs/contrato_apartamentos.md`. O teste cria os dados ficticios e fornece um escritor que captura texto; nao chama o shell nem os cadastros dos colegas.
+
+Executar separadamente dos testes anteriores, na raiz do repositorio:
+
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/infoAp_executar_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/infoAp_executar_teste.asm
+```
+
+O resultado esperado nos dois modos e `PASS: infoAp_executar (24 cenarios)` com codigo zero. Erros de montagem, simulacao ou verificacao devem terminar com codigo nao zero. Atingir o limite de instrucoes sem PASS tambem indica falha. As primeiras quatro consultas sao exibidas no terminal depois da comparacao exata com o texto esperado.
+
+Os cenarios cobrem:
+
+1. AP vazio.
+2. morador sem veiculo.
+3. dois moradores e carro.
+4. seis moradores e tres motos.
+5. AP ausente.
+6. base nula.
+7. passo insuficiente.
+8. passo desalinhado.
+9. base desalinhada.
+10. escritor nulo.
+11. moradores acima do limite.
+12. veiculos acima dos slots.
+13. tipo carro com dois veiculos.
+14. nome no limite.
+15. tabela compacta.
+16. escritor desalinhado.
+17. garagem residual em AP vazio.
+18. moradores negativos.
+19. veiculos negativos.
+20. tipo geral desconhecido.
+21. nome sem terminador.
+22. AP zero.
+23. AP negativo.
+24. Escrita nos enderecos MMIO com disponibilidade simulada.
+
+Todos os cenarios de consulta comparam a saida completa, o retorno e a preservacao dos quatro argumentos, oito registradores salvos e pilha. Um snapshot confere todos os 12288 bytes da tabela ficticia e de suas reservas, e sentinelas protegem tabela e captura. Os cenarios com escritor valido usam uma captura que ocupa a area de argumentos e sobrescreve temporarios, argumentos, retornos e HI/LO, testando o contrato de chamada.
+
+O teste de MMIO sinaliza o bit de disponibilidade diretamente na memoria do simulador e verifica o caractere final no endereco de dados. Nao valida a janela grafica do dispositivo, teclado ou o shell integrado. Para uso real, conectar o Keyboard and Display MMIO Simulator e passar o endereco de `infoAp_escreverMMIO` como escritor.
+
+A consulta ainda usa uma proposta de nomes em seis espacos contiguos de 48 bytes. O grupo precisa aprovar ou ajustar esse contrato antes da integracao. A opcao `infoAp --all` ficara em uma entrega separada.
