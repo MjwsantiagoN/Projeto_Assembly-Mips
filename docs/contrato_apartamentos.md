@@ -36,9 +36,9 @@ A rotina examina exatamente os 24 registros, comparando o identificador de cada 
 
 ## Integracao com o shell
 
-O shell ainda deve reconhecer `limparAp --AP`, converter seu argumento para numero e chamar esta rotina com a tabela e o passo aprovados pelo grupo. Em erro, deve imprimir a string apontada por `$v1` pela interface compartilhada de saida, prevista para MMIO. A rotina nao imprime por conta propria, nao salva arquivo e nao redefine o interpretador ou o MMIO.
+`src/apartamento/comandosAp.asm`, chamado por `src/main.asm`, reconhece `limparAp --AP`, converte o argumento e chama esta rotina com a tabela de integracao em `tabelaAp.asm`. Em erro, imprime a string apontada por `$v1` pela saida MMIO. A rotina de limpeza nao imprime por conta propria nem salva arquivo. O layout e a unificacao com o cadastro do grupo continuam sujeitos a revisao; ver `docs/integracao_apartamentos.md`.
 
-O teste isolado demonstra a limpeza em memoria; ele nao comprova que o comando ja esta integrado ao shell. As rotinas das duas etapas anteriores continuam com seus contratos originais.
+Os testes isolados demonstram a limpeza em memoria. `tests/comandosAp_teste.asm` verifica separadamente a ligacao dos comandos com a tabela real desta integracao. As rotinas auxiliares continuam com seus contratos originais.
 
 ## Entrega e dependencias
 
@@ -72,14 +72,14 @@ A saida mantem o formato: `AP: numero`; para AP sem moradores, `Apartamento vazi
 
 A funcao espera o bit zero de `0xFFFF0008` e envia o caractere a `0xFFFF000C`. A consulta usa limite 47 para nomes, 31 para modelos e 11 para placas, sem precisar copiar cada campo para outro buffer. Mensagens fixas usam limite zero.
 
-O futuro `src/main.asm` deve incluir os dois modulos, por exemplo:
+O `src/main.asm` inclui os dois modulos, alem da consulta completa, tabela, interpretador, limpeza e entrada MMIO. As inclusoes da consulta individual sao:
 
 ```asm
 .include "apartamento/infoAp.asm"
 .include "Auxiliares/saidaApMMIO.asm"
 ```
 
-Essas inclusoes nao substituem o ponto de entrada do shell. Conectar o Keyboard and Display MMIO Simulator para a execucao real. O exemplo antigo `MMIO.asm` continua separado, com seu proprio `main`.
+Conectar o Keyboard and Display MMIO Simulator para a execucao interativa. O exemplo antigo `MMIO.asm` continua separado, com seu proprio `main`, e nao deve ser montado junto.
 
 ## Testes da interface simplificada
 
