@@ -5,7 +5,7 @@
 # Semestre letivo: 2026.2
 # Arquivo: infoAp_executar_teste.asm
 # Descricao: compara a consulta de APs ficticios e verifica somente leitura.
-# O teste MMIO usa disponibilidade simulada, sem validar a janela grafica.
+# O Display MMIO e testado separadamente em saidaApMMIO_teste.asm.
 # ==============================================================
 
 .data                                    # Inicia os dados exclusivos do teste.
@@ -15,7 +15,6 @@ ti_statusEsperado: .word 0               # Reserva um controle do programa de te
 ti_indiceEsperado: .word 0               # Reserva um controle do programa de teste.
 ti_pilha: .word 0                        # Reserva um controle do programa de teste.
 ti_saidaPos: .word 0                     # Reserva um controle do programa de teste.
-ti_controleAntes: .word 0                # Reserva um controle do programa de teste.
 ti_contexto: .space 32                   # Guarda os oito registradores salvos.
 ti_argumentos: .space 16                 # Guarda os quatro argumentos.
 ti_nome: .asciiz "Morador Teste"         # Define texto ficticio ou mensagem esperada do teste.
@@ -25,32 +24,29 @@ ti_erroAP: .asciiz "Falha: AP invalido\n" # Define texto ficticio ou mensagem es
 ti_erroDados: .asciiz "Falha: dados do AP invalidos\n" # Define texto ficticio ou mensagem esperada do teste.
 ti_nl: .asciiz "\n"                      # Define texto ficticio ou mensagem esperada do teste.
 ti_ok: .asciiz "OK cenario "             # Define texto ficticio ou mensagem esperada do teste.
-ti_pass: .asciiz "PASS: infoAp_executar (24 cenarios)\n" # Define texto ficticio ou mensagem esperada do teste.
+ti_pass: .asciiz "PASS: infoAp_executar (21 cenarios)\n" # Resultado geral da consulta.
 ti_fail: .asciiz "FAIL: infoAp_executar, cenario " # Define texto ficticio ou mensagem esperada do teste.
-ti_textoMMIO: .asciiz "OK"               # Define texto ficticio ou mensagem esperada do teste.
-ti_esperado1: .asciiz "AP: 101\nApartamento vazio\n" # Define a saida exata esperada no cenario 1.
-ti_esperado2: .asciiz "AP: 202\nMoradores:\nMorador Teste\n" # Define a saida exata esperada no cenario 2.
-ti_esperado3: .asciiz "AP: 1102\nMoradores:\nMorador Teste\nMorador Teste\nCarro:\nModelo Teste / ABC1234\n" # Define a saida exata esperada no cenario 3.
-ti_esperado4: .asciiz "AP: 1202\nMoradores:\nMorador Teste\nMorador Teste\nMorador Teste\nMorador Teste\nMorador Teste\nMorador Teste\nMoto:\nModelo Teste / ABC1234\nModelo Teste / ABC1234\nModelo Teste / ABC1234\n" # Define a saida exata esperada no cenario 4.
-ti_esperado5: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 5.
-ti_esperado6: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 6.
-ti_esperado7: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 7.
-ti_esperado8: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 8.
-ti_esperado9: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 9.
-ti_esperado10: .asciiz ""                # Define a saida exata esperada no cenario 10.
-ti_esperado11: .asciiz "Falha: dados do AP invalidos\n" # Define a saida exata esperada no cenario 11.
-ti_esperado12: .asciiz "Falha: dados do AP invalidos\n" # Define a saida exata esperada no cenario 12.
-ti_esperado13: .asciiz "Falha: dados do AP invalidos\n" # Define a saida exata esperada no cenario 13.
-ti_esperado14: .asciiz "AP: 202\nMoradores:\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" # Define a saida exata esperada no cenario 14.
-ti_esperado15: .asciiz "AP: 1102\nMoradores:\nMorador Teste\nMorador Teste\nCarro:\nModelo Teste / ABC1234\n" # Define a saida exata esperada no cenario 15.
-ti_esperado16: .asciiz ""                # Define a saida exata esperada no cenario 16.
-ti_esperado17: .asciiz "AP: 101\nApartamento vazio\n" # Define a saida exata esperada no cenario 17.
-ti_esperado18: .asciiz "Falha: dados do AP invalidos\n" # Define a saida exata esperada no cenario 18.
-ti_esperado19: .asciiz "Falha: dados do AP invalidos\n" # Define a saida exata esperada no cenario 19.
-ti_esperado20: .asciiz "Falha: dados do AP invalidos\n" # Define a saida exata esperada no cenario 20.
-ti_esperado21: .asciiz "AP: 202\nMoradores:\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" # Define a saida exata esperada no cenario 21.
-ti_esperado22: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 22.
-ti_esperado23: .asciiz "Falha: AP invalido\n" # Define a saida exata esperada no cenario 23.
+ti_esperado1: .asciiz "AP: 101\nApartamento vazio\n" # Texto esperado para o cenario 1.
+ti_esperado2: .asciiz "AP: 202\nMoradores:\nMorador Teste\n" # Texto esperado para o cenario 2.
+ti_esperado3: .asciiz "AP: 1102\nMoradores:\nMorador Teste\nMorador Teste\nCarro:\nModelo Teste / ABC1234\n" # Texto esperado para o cenario 3.
+ti_esperado4: .asciiz "AP: 1202\nMoradores:\nMorador Teste\nMorador Teste\nMorador Teste\nMorador Teste\nMorador Teste\nMorador Teste\nMoto:\nModelo Teste / ABC1234\nModelo Teste / ABC1234\nModelo Teste / ABC1234\n" # Texto esperado para o cenario 4.
+ti_esperado5: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 5.
+ti_esperado6: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 6.
+ti_esperado7: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 7.
+ti_esperado8: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 8.
+ti_esperado9: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 9.
+ti_esperado10: .asciiz "Falha: dados do AP invalidos\n" # Texto esperado para o cenario 10.
+ti_esperado11: .asciiz "Falha: dados do AP invalidos\n" # Texto esperado para o cenario 11.
+ti_esperado12: .asciiz "Falha: dados do AP invalidos\n" # Texto esperado para o cenario 12.
+ti_esperado13: .asciiz "AP: 202\nMoradores:\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" # Texto esperado para o cenario 13.
+ti_esperado14: .asciiz "AP: 1102\nMoradores:\nMorador Teste\nMorador Teste\nCarro:\nModelo Teste / ABC1234\n" # Texto esperado para o cenario 14.
+ti_esperado15: .asciiz "AP: 101\nApartamento vazio\n" # Texto esperado para o cenario 15.
+ti_esperado16: .asciiz "Falha: dados do AP invalidos\n" # Texto esperado para o cenario 16.
+ti_esperado17: .asciiz "Falha: dados do AP invalidos\n" # Texto esperado para o cenario 17.
+ti_esperado18: .asciiz "Falha: dados do AP invalidos\n" # Texto esperado para o cenario 18.
+ti_esperado19: .asciiz "AP: 202\nMoradores:\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" # Texto esperado para o cenario 19.
+ti_esperado20: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 20.
+ti_esperado21: .asciiz "Falha: AP invalido\n" # Texto esperado para o cenario 21.
 .align 2                                 # Alinha tabelas e sentinelas.
 ti_original: .space 12288                # Reserva a referencia de 24 registros de 512 bytes.
 ti_guardaAntes: .word 0x13579BDF         # Protege o limite anterior da tabela de trabalho.
@@ -63,362 +59,311 @@ ti_saidaDepois: .word 0x5678DCBA         # Protege o limite posterior da captura
 
 .text                                    # Inicia as instrucoes do teste.
 .globl main                              # Exporta a entrada.
-main:                                    # Cria a referencia antes de executar os cenarios.
-    jal ti_criarOriginal                 # Cria APs ficticios sem os cadastros do grupo.
-    nop                                  # Protege o delay slot da chamada.
+
+main:                                    # Cria apartamentos ficticios e executa cada cenario.
+    jal ti_criarOriginal                 # Prepara os dados sem chamar os cadastros dos colegas.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 1: AP vazio.
-    li $t0, 1                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 0                            # Define o indice esperado ou -1 para erro.
+    li $t0, 1                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 0                            # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 101                          # Fornece o numero solicitado.
-    la $a1, ti_esperado1                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 101                          # Seleciona o apartamento.
+    la $a1, ti_esperado1                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 2: morador sem veiculo.
-    li $t0, 2                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 3                            # Define o indice esperado ou -1 para erro.
+    li $t0, 2                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 3                            # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 202                          # Fornece o numero solicitado.
-    la $a1, ti_esperado2                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 202                          # Seleciona o apartamento.
+    la $a1, ti_esperado2                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 3: dois moradores e carro.
-    li $t0, 3                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 21                           # Define o indice esperado ou -1 para erro.
+    li $t0, 3                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 21                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado3                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado3                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 4: seis moradores e tres motos.
-    li $t0, 4                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 23                           # Define o indice esperado ou -1 para erro.
+    li $t0, 4                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 23                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1202                         # Fornece o numero solicitado.
-    la $a1, ti_esperado4                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1202                         # Seleciona o apartamento.
+    la $a1, ti_esperado4                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 5: AP ausente.
-    li $t0, 5                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+    li $t0, 5                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1301                         # Fornece o numero solicitado.
-    la $a1, ti_esperado5                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1301                         # Seleciona o apartamento.
+    la $a1, ti_esperado5                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 6: base nula.
-    li $t0, 6                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+    li $t0, 6                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado6                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 1                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado6                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 1                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 7: passo insuficiente.
-    li $t0, 7                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+    li $t0, 7                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado7                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 2                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado7                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 2                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 8: passo desalinhado.
-    li $t0, 8                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+    li $t0, 8                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado8                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 3                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado8                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 3                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
 # Cenario 9: base desalinhada.
-    li $t0, 9                            # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+    li $t0, 9                            # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado9                 # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 4                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado9                 # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 4                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 10: escritor nulo.
-    li $t0, 10                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 10: moradores acima do limite.
+    li $t0, 10                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -2                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado10                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 5                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado10                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 6                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 11: moradores acima do limite.
-    li $t0, 11                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -2                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 11: veiculos acima dos slots.
+    li $t0, 11                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -2                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado11                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 6                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado11                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 7                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 12: veiculos acima dos slots.
-    li $t0, 12                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -2                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 12: tipo carro com dois veiculos.
+    li $t0, 12                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -2                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado12                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 7                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado12                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 8                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 13: tipo carro com dois veiculos.
-    li $t0, 13                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -2                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 13: nome no limite.
+    li $t0, 13                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 3                            # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado13                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 8                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 202                          # Seleciona o apartamento.
+    la $a1, ti_esperado13                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 9                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 14: nome no limite.
-    li $t0, 14                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 3                            # Define o indice esperado ou -1 para erro.
+# Cenario 14: tabela compacta.
+    li $t0, 14                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 21                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 202                          # Fornece o numero solicitado.
-    la $a1, ti_esperado14                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 9                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado14                # Seleciona o texto que deve aparecer.
+    li $a2, 448                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 15: tabela compacta.
-    li $t0, 15                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 21                           # Define o indice esperado ou -1 para erro.
+# Cenario 15: garagem residual em AP vazio.
+    li $t0, 15                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 0                            # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado15                # Seleciona a saida esperada.
-    li $a2, 448                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 101                          # Seleciona o apartamento.
+    la $a1, ti_esperado15                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 11                           # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 16: escritor desalinhado.
-    li $t0, 16                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 16: moradores negativos.
+    li $t0, 16                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -2                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado16                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 10                           # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado16                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 12                           # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 17: garagem residual em AP vazio.
-    li $t0, 17                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 0                            # Define o indice esperado ou -1 para erro.
+# Cenario 17: veiculos negativos.
+    li $t0, 17                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -2                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 101                          # Fornece o numero solicitado.
-    la $a1, ti_esperado17                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 11                           # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado17                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 13                           # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 18: moradores negativos.
-    li $t0, 18                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -2                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 18: tipo geral desconhecido.
+    li $t0, 18                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -2                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado18                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 12                           # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 1102                         # Seleciona o apartamento.
+    la $a1, ti_esperado18                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 14                           # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 19: veiculos negativos.
-    li $t0, 19                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -2                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 19: nome sem terminador.
+    li $t0, 19                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, 0                            # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, 3                            # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado19                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 13                           # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 202                          # Seleciona o apartamento.
+    la $a1, ti_esperado19                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 15                           # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 20: tipo geral desconhecido.
-    li $t0, 20                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -2                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
+# Cenario 20: AP zero.
+    li $t0, 20                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 1102                         # Fornece o numero solicitado.
-    la $a1, ti_esperado20                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 14                           # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, 0                            # Seleciona o apartamento.
+    la $a1, ti_esperado20                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 21: nome sem terminador.
-    li $t0, 21                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, 0                            # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, 3                            # Define o indice esperado ou -1 para erro.
+# Cenario 21: AP negativo.
+    li $t0, 21                           # Identifica o cenario.
+    sw $t0, ti_idCaso                    # Guarda o identificador para eventual erro.
+    li $t0, -1                           # Define o retorno esperado.
+    sw $t0, ti_statusEsperado            # Guarda o retorno esperado.
+    li $t0, -1                           # Define o indice do AP ou -1 no erro.
     sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 202                          # Fornece o numero solicitado.
-    la $a1, ti_esperado21                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 15                           # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
+    li $a0, -1                           # Seleciona o apartamento.
+    la $a1, ti_esperado21                # Seleciona o texto que deve aparecer.
+    li $a2, 512                          # Define o passo dos registros.
+    li $a3, 0                            # Seleciona a preparacao especifica do teste.
+    jal ti_executar                      # Executa e confere a consulta.
+    nop                                  # Nao faz trabalho no atraso desta chamada.
 
-# Cenario 22: AP zero.
-    li $t0, 22                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
-    sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, 0                            # Fornece o numero solicitado.
-    la $a1, ti_esperado22                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
-
-# Cenario 23: AP negativo.
-    li $t0, 23                           # Define o identificador do cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador fora dos registradores em teste.
-    li $t0, -1                           # Define o status esperado.
-    sw $t0, ti_statusEsperado            # Guarda o status esperado.
-    li $t0, -1                           # Define o indice esperado ou -1 para erro.
-    sw $t0, ti_indiceEsperado            # Guarda o indice esperado.
-    li $a0, -1                           # Fornece o numero solicitado.
-    la $a1, ti_esperado23                # Seleciona a saida esperada.
-    li $a2, 512                          # Define o passo ficticio.
-    li $a3, 0                            # Seleciona o modo de parametros ou dados.
-    jal ti_executar                      # Consulta, captura e confere a rotina real.
-    nop                                  # Protege o delay slot da chamada.
-
-# Cenario 24: escrita MMIO com disponibilidade simulada.
-    li $t0, 24                           # Identifica o ultimo cenario.
-    sw $t0, ti_idCaso                    # Guarda o identificador.
-    li $t7, 0xFFFF0008                   # Seleciona o controle real do display.
-    lw $t6, 0($t7)                       # Le o controle antes do teste.
-    sw $t6, ti_controleAntes             # Guarda o controle anterior.
-    li $t6, 1                            # Define disponibilidade permanente simulada.
-    sw $t6, 0($t7)                       # Sinaliza que o display esta disponivel.
-    la $a0, ti_textoMMIO                 # Seleciona o texto OK.
-    move $s7, $sp                        # Guarda o equilibrio da pilha.
-    jal infoAp_escreverMMIO              # Executa o escritor real com disponibilidade simulada.
-    nop                                  # Protege o delay slot.
-    li $t7, 0xFFFF0008                   # Recupera o endereco de controle.
-    lw $t0, 4($t7)                       # Le o ultimo caractere enviado ao display.
-    li $t1, 75                           # Define o ASCII de K.
-    bne $t0, $t1, ti_falha               # Confere o endereco e o byte final escritos.
-    nop                                  # Protege o delay slot.
-    la $t0, ti_textoMMIO                 # Recupera o argumento original.
-    bne $a0, $t0, ti_falha               # Exige preservacao do argumento.
-    nop                                  # Protege o delay slot.
-    bne $sp, $s7, ti_falha               # Exige preservacao da pilha.
-    nop                                  # Protege o delay slot.
-    lw $t6, ti_controleAntes             # Recupera o controle anterior.
-    sw $t6, 0($t7)                       # Restaura o controle MMIO.
-    la $a0, ti_pass                      # Seleciona a mensagem de sucesso global.
-    li $v0, 4                            # Seleciona impressao de string do teste.
-    syscall                              # Exibe o sucesso dos 24 cenarios.
-    move $a0, $zero                      # Define codigo de sucesso.
+    la $a0, ti_pass                      # Seleciona o resultado geral.
+    li $v0, 4                            # Seleciona impressao no terminal de testes.
+    syscall                              # Informa que os 21 cenarios passaram.
+    move $a0, $zero                      # Define sucesso.
     li $v0, 17                           # Seleciona encerramento com codigo.
-    syscall                              # Encerra o programa de teste.
+    syscall                              # Finaliza com sucesso.
 
 ti_criarOriginal:                        # Prepara a tabela de referencia que os testes nao devem alterar.
     addiu $sp, $sp, -40                  # Reserva frame alinhado e area para chamadas auxiliares.
@@ -434,7 +379,7 @@ ti_originalZerar:                        # Inicializa toda a referencia antes de
     addiu $t0, $t0, 4                    # Avanca para a proxima word.
     addiu $t1, $t1, -1                   # Desconta a word inicializada.
     bne $t1, $zero, ti_originalZerar     # Repete ate inicializar a referencia inteira.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $s0, ti_original                  # Seleciona o primeiro registro ficticio.
     move $s1, $zero                      # Inicializa o indice do primeiro apartamento.
 ti_originalRegistro:                     # Define identificacao e cadastros de um registro ficticio.
@@ -448,53 +393,53 @@ ti_originalRegistro:                     # Define identificacao e cadastros de u
     sw $t0, 0($s0)                       # Grava a identificacao que a limpeza deve preservar.
     li $s2, 1                            # Define um morador para os apartamentos de referencia comuns.
     bne $s1, $zero, ti_originalContar21  # Mantem o primeiro AP como caso especial de vazio.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     move $s2, $zero                      # Define o primeiro apartamento como vazio.
     j ti_originalContagemPronta          # Finaliza a contagem do caso vazio.
-    nop                                  # Protege o delay slot do salto.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalContar21:                     # Verifica o registro usado para o teste de carro.
     li $t0, 21                           # Seleciona o indice do apartamento 1102.
     bne $s1, $t0, ti_originalContar23    # Segue para o outro caso especial se nao for 1102.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $s2, 2                            # Define dois moradores no apartamento com carro.
     j ti_originalContagemPronta          # Finaliza a contagem desse apartamento.
-    nop                                  # Protege o delay slot do salto.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalContar23:                     # Verifica o registro usado para o teste de motos.
     li $t0, 23                           # Seleciona o indice do apartamento 1202.
     bne $s1, $t0, ti_originalContagemPronta # Mantem a contagem comum para os demais APs.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $s2, 6                            # Define o limite de seis moradores no ultimo apartamento.
 ti_originalContagemPronta:               # Grava e prepara os nomes dos moradores ficticios.
     sw $s2, 4($s0)                       # Grava a quantidade no offset proposto para moradores.
     addiu $s3, $s0, 8                    # Aponta para o primeiro espaco ficticio de nome.
     beq $s2, $zero, ti_originalVeiculos  # Pula os nomes no apartamento vazio.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalNome:                         # Grava nomes apenas nos espacos ocupados da referencia.
     move $a0, $s3                        # Seleciona o espaco de nome a preencher.
     la $a1, ti_nome                      # Seleciona uma string ficticia terminada em zero.
     jal ti_copiarString                  # Copia o nome sem depender de uma funcao do projeto.
-    nop                                  # Protege o delay slot da chamada.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $s3, $s3, 48                   # Avanca para o proximo espaco usado somente neste teste.
     addiu $s2, $s2, -1                   # Desconta o morador que recebeu um nome.
     bne $s2, $zero, ti_originalNome      # Repete ate preencher os nomes ficticios cadastrados.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalVeiculos:                     # Seleciona quais apartamentos de referencia tem garagem ocupada.
     li $t0, 1                            # Seleciona um AP vizinho que tambem deve ser preservado.
     beq $s1, $t0, ti_originalCarro       # Cadastra um carro no apartamento vizinho.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t0, 21                           # Seleciona o apartamento 1102.
     beq $s1, $t0, ti_originalCarro       # Cadastra um carro no apartamento alvo intermediario.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t0, 23                           # Seleciona o apartamento 1202.
     beq $s1, $t0, ti_originalMotos       # Cadastra tres motos no ultimo apartamento.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     j ti_originalReserva                 # Mantem sem veiculos os demais registros.
-    nop                                  # Protege o delay slot do salto.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalCarro:                        # Define o cabecalho de garagem com um carro.
     li $s2, 1                            # Define um veiculo no apartamento.
     li $t0, 99                           # Define o tipo carro pelo ASCII de c.
     j ti_originalGaragem                 # Segue para a gravacao dos campos da garagem.
-    nop                                  # Protege o delay slot do salto.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalMotos:                        # Define o cabecalho de garagem com tres motos.
     li $s2, 3                            # Define tres veiculos no apartamento.
     li $t0, 109                          # Define o tipo moto pelo ASCII de m.
@@ -508,15 +453,15 @@ ti_originalSlot:                         # Preenche os slots ocupados com modelo
     addiu $a0, $s3, 4                    # Aponta para o campo de modelo do slot.
     la $a1, ti_modelo                    # Seleciona o modelo ficticio.
     jal ti_copiarString                  # Grava o modelo sem chamar o cadastro dos colegas.
-    nop                                  # Protege o delay slot da chamada.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $a0, $s3, 36                   # Aponta para o campo de placa do slot.
     la $a1, ti_placa                     # Seleciona a placa ficticia.
     jal ti_copiarString                  # Grava a placa sem chamar o cadastro dos colegas.
-    nop                                  # Protege o delay slot da chamada.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $s3, $s3, 48                   # Avanca para o proximo slot de veiculo.
     addiu $s2, $s2, -1                   # Desconta o veiculo que recebeu seus dados.
     bne $s2, $zero, ti_originalSlot      # Preenche todos os slots declarados no contador.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_originalReserva:                      # Prepara os bytes opcionais que devem ficar intactos.
     addiu $t0, $s0, 448                  # Aponta para o inicio da reserva posterior a garagem.
     li $t1, 64                           # Define os bytes extras usados no passo de 512.
@@ -526,12 +471,12 @@ ti_originalReservaLoop:                  # Preenche a reserva com a marca de pre
     addiu $t0, $t0, 1                    # Avanca para o proximo byte reservado.
     addiu $t1, $t1, -1                   # Desconta o byte preparado.
     bne $t1, $zero, ti_originalReservaLoop # Repete ate preparar toda a reserva.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $s0, $s0, 512                  # Avanca para o proximo registro da referencia.
     addiu $s1, $s1, 1                    # Incrementa o indice de registro preparado.
     slti $t0, $s1, 24                    # Verifica se ainda faltam apartamentos.
     bne $t0, $zero, ti_originalRegistro  # Continua ate preparar todos os 24 registros.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $s3, 20($sp)                      # Restaura $s3 apos preparar a referencia.
     lw $s2, 24($sp)                      # Restaura $s2 apos preparar a referencia.
     lw $s1, 28($sp)                      # Restaura $s1 apos preparar a referencia.
@@ -539,20 +484,20 @@ ti_originalReservaLoop:                  # Preenche a reserva com a marca de pre
     lw $ra, 36($sp)                      # Restaura $ra apos preparar a referencia.
     addiu $sp, $sp, 40                   # Libera o frame usado na montagem dos dados ficticios.
     jr $ra                               # Retorna ao inicio dos cenarios.
-    nop                                  # Protege o delay slot do retorno.
+    nop                                  # Nao faz trabalho no atraso do salto.
 
 ti_copiarString:                         # Copia uma string curta entre buffers exclusivos do teste.
     lbu $t8, 0($a1)                      # Le um byte da string de referencia.
     sb $t8, 0($a0)                       # Copia o byte para o buffer ficticio.
     beq $t8, $zero, ti_copiarStringFim   # Finaliza depois de copiar o terminador nulo.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $a0, $a0, 1                    # Avanca o destino para o proximo byte.
     addiu $a1, $a1, 1                    # Avanca a origem para o proximo byte.
     j ti_copiarString                    # Continua a copia do texto ficticio.
-    nop                                  # Protege o delay slot do salto.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_copiarStringFim:                      # Finaliza a auxiliar que pertence somente ao teste.
     jr $ra                               # Retorna ao preparador dos registros ficticios.
-    nop                                  # Protege o delay slot do retorno.
+    nop                                  # Nao faz trabalho no atraso do salto.
 
 ti_prepararTabela:                       # Recebe em a0 o passo ficticio e copia a referencia para o teste.
     la $t0, ti_tabela                    # Aponta para o buffer de trabalho completo.
@@ -563,7 +508,7 @@ ti_prepararSobra:                        # Inicializa o buffer para detectar esc
     addiu $t0, $t0, 4                    # Avanca para a proxima word.
     addiu $t1, $t1, -1                   # Desconta a word preparada.
     bne $t1, $zero, ti_prepararSobra     # Repete ate preparar o buffer completo.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $t0, ti_original                  # Seleciona o primeiro registro da referencia.
     la $t1, ti_tabela                    # Seleciona o primeiro registro de trabalho.
     li $t2, 24                           # Define a quantidade de registros que serao copiados.
@@ -578,14 +523,14 @@ ti_prepararWord:                         # Copia os bytes de um registro sem cha
     addiu $t6, $t6, 4                    # Avanca a escrita dentro do registro.
     addiu $t7, $t7, -1                   # Desconta a word copiada.
     bne $t7, $zero, ti_prepararWord      # Repete ate copiar o registro inteiro.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $t0, $t0, 512                  # Avanca ao proximo registro da referencia fixa.
     addu $t1, $t1, $a0                   # Avanca no destino usando passo de 448 ou 512.
     addiu $t2, $t2, -1                   # Desconta o registro que foi copiado.
     bne $t2, $zero, ti_prepararRegistro  # Repete para todos os apartamentos.
-    nop                                  # Protege o delay slot do desvio.
+    nop                                  # Nao faz trabalho no atraso do salto.
     jr $ra                               # Retorna com a tabela de trabalho pronta.
-    nop                                  # Protege o delay slot do retorno.
+    nop                                  # Nao faz trabalho no atraso do salto.
 
 ti_executar:                             # Recebe numero, texto esperado, passo e modo do cenario.
     addiu $sp, $sp, -64                  # Reserva frame alinhado para o verificador.
@@ -604,58 +549,58 @@ ti_executar:                             # Recebe numero, texto esperado, passo 
     move $s3, $a3                        # Mantem a configuracao 4 entre chamadas.
     move $a0, $s2                        # Fornece o passo da tabela ficticia.
     jal ti_prepararTabela                # Restaura os dados antes de cada consulta.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $t0, ti_tabela                    # Seleciona a base dos dados artificiais.
     addiu $t0, $t0, 10752                # Seleciona o AP 1102, de indice 21 e passo 512.
     li $t3, 6                            # Seleciona um caso de dados inconsistentes.
     bne $s3, $t3, ti_dadosSeguinte6      # Pula a alteracao para os outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t1, 7                            # Define o valor inconsistente do cenario.
     sw $t1, 4($t0)                       # Altera apenas a tabela ficticia antes do snapshot.
 ti_dadosSeguinte6:                       # Continua a preparacao do cenario.
     li $t3, 7                            # Seleciona um caso de dados inconsistentes.
     bne $s3, $t3, ti_dadosSeguinte7      # Pula a alteracao para os outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t1, 4                            # Define o valor inconsistente do cenario.
     sw $t1, 296($t0)                     # Altera apenas a tabela ficticia antes do snapshot.
 ti_dadosSeguinte7:                       # Continua a preparacao do cenario.
     li $t3, 8                            # Seleciona um caso de dados inconsistentes.
     bne $s3, $t3, ti_dadosSeguinte8      # Pula a alteracao para os outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t1, 2                            # Define o valor inconsistente do cenario.
     sw $t1, 296($t0)                     # Altera apenas a tabela ficticia antes do snapshot.
 ti_dadosSeguinte8:                       # Continua a preparacao do cenario.
     li $t3, 12                           # Seleciona um caso de dados inconsistentes.
     bne $s3, $t3, ti_dadosSeguinte12     # Pula a alteracao para os outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t1, -1                           # Define o valor inconsistente do cenario.
     sw $t1, 4($t0)                       # Altera apenas a tabela ficticia antes do snapshot.
 ti_dadosSeguinte12:                      # Continua a preparacao do cenario.
     li $t3, 13                           # Seleciona um caso de dados inconsistentes.
     bne $s3, $t3, ti_dadosSeguinte13     # Pula a alteracao para os outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t1, -1                           # Define o valor inconsistente do cenario.
     sw $t1, 296($t0)                     # Altera apenas a tabela ficticia antes do snapshot.
 ti_dadosSeguinte13:                      # Continua a preparacao do cenario.
     li $t3, 14                           # Seleciona um caso de dados inconsistentes.
     bne $s3, $t3, ti_dadosSeguinte14     # Pula a alteracao para os outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t1, 120                          # Define o valor inconsistente do cenario.
     sw $t1, 300($t0)                     # Altera apenas a tabela ficticia antes do snapshot.
 ti_dadosSeguinte14:                      # Continua a preparacao do cenario.
     li $t3, 11                           # Seleciona garagem residual em AP sem moradores.
     bne $s3, $t3, ti_verNomeLimite       # Pula a alteracao nos demais modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $t0, ti_tabela                    # Seleciona o primeiro apartamento, que esta vazio.
     li $t1, 999                          # Define uma contagem residual de veiculos.
     sw $t1, 296($t0)                     # Grava os dados que nao devem ser listados em AP vazio.
 ti_verNomeLimite:                        # Seleciona os testes de capacidade e terminacao.
     li $t3, 9                            # Identifica nome com 47 caracteres e terminador.
     beq $s3, $t3, ti_nomeLimite          # Prepara o nome no limite.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t3, 15                           # Identifica campo sem terminador.
     bne $s3, $t3, ti_snapshotPreparar    # Pula a alteracao para outros modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_nomeLimite:                           # Preenche o primeiro nome do AP 202.
     la $t0, ti_tabela                    # Seleciona a base da tabela.
     addiu $t0, $t0, 1544                 # Seleciona o nome no indice 3 e offset 8 com passo 512.
@@ -666,10 +611,10 @@ ti_nomeLimiteLoop:                       # Preenche todos os bytes do campo para
     addiu $t0, $t0, 1                    # Avanca no campo.
     addiu $t1, $t1, -1                   # Desconta o byte preenchido.
     bne $t1, $zero, ti_nomeLimiteLoop    # Preenche os 48 bytes.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $t3, 9                            # Seleciona apenas o cenario de nome valido no limite.
     bne $s3, $t3, ti_snapshotPreparar    # Mantem o campo sem terminador no outro cenario.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     sb $zero, -1($t0)                    # Garante terminacao apos os 47 caracteres do nome valido.
 ti_snapshotPreparar:                     # Guarda a tabela imediatamente antes da rotina real.
     la $t0, ti_tabela                    # Seleciona a tabela preparada.
@@ -682,43 +627,33 @@ ti_snapshotLoop:                         # Copia todos os registros e reservas.
     addiu $t1, $t1, 4                    # Avanca o snapshot.
     addiu $t2, $t2, -1                   # Desconta a word copiada.
     bne $t2, $zero, ti_snapshotLoop      # Copia o buffer inteiro.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     sw $zero, ti_saidaPos                # Reinicia o tamanho da captura.
     sb $zero, ti_saida                   # Reinicia o texto como string vazia.
     la $a0, ti_tabela                    # Fornece a base normal da tabela.
     move $a1, $s0                        # Fornece o numero do AP.
     move $a2, $s2                        # Fornece o passo normal.
-    la $a3, ti_capturar                  # Fornece o escritor com temporarios volateis.
+    li $a3, 4660                         # Marca um registrador que nao e parametro da consulta.
     li $t0, 1                            # Seleciona um modo de argumentos invalidos.
     bne $s3, $t0, ti_argSeguinte1        # Pula a injecao nos demais modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     move $a0, $zero                      # Injeta o parametro invalido selecionado.
 ti_argSeguinte1:                         # Continua a preparacao dos argumentos.
     li $t0, 2                            # Seleciona um modo de argumentos invalidos.
     bne $s3, $t0, ti_argSeguinte2        # Pula a injecao nos demais modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $a2, 444                          # Injeta o parametro invalido selecionado.
 ti_argSeguinte2:                         # Continua a preparacao dos argumentos.
     li $t0, 3                            # Seleciona um modo de argumentos invalidos.
     bne $s3, $t0, ti_argSeguinte3        # Pula a injecao nos demais modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     li $a2, 450                          # Injeta o parametro invalido selecionado.
 ti_argSeguinte3:                         # Continua a preparacao dos argumentos.
     li $t0, 4                            # Seleciona um modo de argumentos invalidos.
     bne $s3, $t0, ti_argSeguinte4        # Pula a injecao nos demais modos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $a0, $a0, 1                    # Injeta o parametro invalido selecionado.
 ti_argSeguinte4:                         # Continua a preparacao dos argumentos.
-    li $t0, 5                            # Seleciona um modo de argumentos invalidos.
-    bne $s3, $t0, ti_argSeguinte5        # Pula a injecao nos demais modos.
-    nop                                  # Protege o delay slot.
-    move $a3, $zero                      # Injeta o parametro invalido selecionado.
-ti_argSeguinte5:                         # Continua a preparacao dos argumentos.
-    li $t0, 10                           # Seleciona um modo de argumentos invalidos.
-    bne $s3, $t0, ti_argSeguinte10       # Pula a injecao nos demais modos.
-    nop                                  # Protege o delay slot.
-    li $a3, 1                            # Injeta o parametro invalido selecionado.
-ti_argSeguinte10:                        # Continua a preparacao dos argumentos.
     li $s4, 305397764                    # Define uma marca em registrador salvo livre.
     li $s5, 305397765                    # Define uma marca em registrador salvo livre.
     li $s6, 305397766                    # Define uma marca em registrador salvo livre.
@@ -737,78 +672,78 @@ ti_argSeguinte10:                        # Continua a preparacao dos argumentos.
     sw $s7, ti_contexto+28               # Guarda o valor esperado de $s7.
     sw $sp, ti_pilha                     # Guarda a posicao inicial da pilha.
     jal infoAp_executar                  # Executa a consulta real.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_argumentos+0              # Recupera o valor esperado de $a0.
     bne $a0, $t0, ti_falha               # Exige preservacao de $a0.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_argumentos+4              # Recupera o valor esperado de $a1.
     bne $a1, $t0, ti_falha               # Exige preservacao de $a1.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_argumentos+8              # Recupera o valor esperado de $a2.
     bne $a2, $t0, ti_falha               # Exige preservacao de $a2.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_argumentos+12             # Recupera o valor esperado de $a3.
     bne $a3, $t0, ti_falha               # Exige preservacao de $a3.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+0                # Recupera o valor esperado de $s0.
     bne $s0, $t0, ti_falha               # Exige preservacao de $s0.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+4                # Recupera o valor esperado de $s1.
     bne $s1, $t0, ti_falha               # Exige preservacao de $s1.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+8                # Recupera o valor esperado de $s2.
     bne $s2, $t0, ti_falha               # Exige preservacao de $s2.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+12               # Recupera o valor esperado de $s3.
     bne $s3, $t0, ti_falha               # Exige preservacao de $s3.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+16               # Recupera o valor esperado de $s4.
     bne $s4, $t0, ti_falha               # Exige preservacao de $s4.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+20               # Recupera o valor esperado de $s5.
     bne $s5, $t0, ti_falha               # Exige preservacao de $s5.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+24               # Recupera o valor esperado de $s6.
     bne $s6, $t0, ti_falha               # Exige preservacao de $s6.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_contexto+28               # Recupera o valor esperado de $s7.
     bne $s7, $t0, ti_falha               # Exige preservacao de $s7.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_pilha                     # Recupera a posicao inicial da pilha.
     bne $sp, $t0, ti_falha               # Exige equilibrio da pilha.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_statusEsperado            # Recupera o status esperado.
     bne $v0, $t0, ti_falha               # Exige o status correto apos todas as chamadas de saida.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     bne $t0, $zero, ti_checarErro        # Seleciona a verificacao de mensagem de erro.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_indiceEsperado            # Recupera o indice esperado.
     mul $t1, $t0, $s2                    # Calcula o deslocamento do registro.
     la $t0, ti_tabela                    # Recupera a base da tabela.
     addu $t0, $t0, $t1                   # Calcula o endereco esperado.
     bne $v1, $t0, ti_falha               # Exige retorno do registro correto.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     j ti_checarSaida                     # Segue para conferir o texto.
-    nop                                  # Protege o delay slot.
-ti_checarErro:                           # Confere a mensagem retornada mesmo sem escritor valido.
+    nop                                  # Nao faz trabalho no atraso do salto.
+ti_checarErro:                           # Confere a mensagem retornada associada ao erro.
     move $a0, $v1                        # Seleciona a mensagem retornada.
     la $a1, ti_erroAP                    # Seleciona a mensagem esperada de AP invalido.
     li $t1, -2                           # Seleciona o status de registro inconsistente.
     bne $t0, $t1, ti_checarMensagem      # Mantem a mensagem de AP nos demais erros.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $a1, ti_erroDados                 # Seleciona a mensagem de dados invalidos.
 ti_checarMensagem:                       # Compara a mensagem inteira retornada em v1.
     jal ti_compararStrings               # Compara caracteres e terminador.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     bne $v0, $zero, ti_falha             # Exige mensagem identica.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_checarSaida:                          # Verifica exatamente as linhas produzidas.
     la $a0, ti_saida                     # Seleciona o texto capturado.
     move $a1, $s1                        # Seleciona o texto esperado.
     jal ti_compararStrings               # Compara titulos, nomes, veiculos e quebras de linha.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     bne $v0, $zero, ti_falha             # Detecta qualquer texto diferente ou extra.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $t0, ti_tabela                    # Seleciona o buffer depois da consulta.
     la $t1, ti_snapshot                  # Seleciona a copia anterior.
     li $t2, 3072                         # Define quantas words devem permanecer iguais.
@@ -816,32 +751,32 @@ ti_conferirTabela:                       # Confere o buffer inteiro e todas as r
     lw $t3, 0($t0)                       # Le uma word depois da consulta.
     lw $t4, 0($t1)                       # Le a word anterior correspondente.
     bne $t3, $t4, ti_falha               # Detecta qualquer escrita indevida.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $t0, $t0, 4                    # Avanca no resultado.
     addiu $t1, $t1, 4                    # Avanca no snapshot.
     addiu $t2, $t2, -1                   # Desconta a word conferida.
     bne $t2, $zero, ti_conferirTabela    # Confere todos os 12288 bytes.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_guardaAntes               # Le um sentinela externo.
     li $t1, 0x13579BDF                   # Recupera o valor original.
     bne $t0, $t1, ti_falha               # Exige preservacao dos limites.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_guardaDepois              # Le um sentinela externo.
     li $t1, 0x2468ACE0                   # Recupera o valor original.
     bne $t0, $t1, ti_falha               # Exige preservacao dos limites.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_saidaAntes                # Le um sentinela externo.
     li $t1, 0x1234ABCD                   # Recupera o valor original.
     bne $t0, $t1, ti_falha               # Exige preservacao dos limites.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_saidaDepois               # Le um sentinela externo.
     li $t1, 0x5678DCBA                   # Recupera o valor original.
     bne $t0, $t1, ti_falha               # Exige preservacao dos limites.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     lw $t0, ti_idCaso                    # Recupera o numero do cenario.
     li $t1, 5                            # Seleciona as quatro consultas iniciais para demonstracao.
     bge $t0, $t1, ti_imprimirOk          # Pula a demonstracao nos outros casos.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     la $a0, ti_saida                     # Seleciona o texto exato ja conferido.
     li $v0, 4                            # Seleciona impressao apenas para o teste.
     syscall                              # Demonstra a consulta no terminal.
@@ -866,70 +801,71 @@ ti_imprimirOk:                           # Informa que o cenario passou.
     lw $ra, 60($sp)                      # Restaura $ra do chamador.
     addiu $sp, $sp, 64                   # Libera o frame do verificador.
     jr $ra                               # Retorna ao proximo cenario.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
 
-ti_capturar:                             # Escritor que exercita a area de argumentos e temporarios volateis.
-    sw $a0, 0($sp)                       # Usa a area reservada pelo chamador para $a0.
-    sw $a1, 4($sp)                       # Usa a area reservada pelo chamador para $a1.
-    sw $a2, 8($sp)                       # Usa a area reservada pelo chamador para $a2.
-    sw $a3, 12($sp)                      # Usa a area reservada pelo chamador para $a3.
-ti_capturarLoop:                         # Acrescenta uma string ao buffer de captura.
-    lbu $t2, 0($a0)                      # Le um caractere recebido.
-    beq $t2, $zero, ti_capturarFim       # Finaliza no terminador.
-    nop                                  # Protege o delay slot.
-    lw $t0, ti_saidaPos                  # Recupera o tamanho capturado.
-    li $t1, 4095                         # Reserva um byte para terminacao.
-    bge $t0, $t1, ti_falha               # Rejeita captura alem da capacidade.
-    nop                                  # Protege o delay slot.
-    la $t1, ti_saida                     # Seleciona a base da captura.
-    addu $t1, $t1, $t0                   # Seleciona a proxima posicao.
-    sb $t2, 0($t1)                       # Acrescenta o caractere.
+ap_imprimirTexto:                        # No teste, guarda o texto no buffer em vez de acessar MMIO.
+    move $t0, $a0                        # Percorre uma copia do endereco, preservando o argumento.
+    move $t4, $a1                        # Usa uma copia do limite.
+    sw $a0, 0($sp)                       # Exercita a area de argumentos reservada pelo chamador.
+    sw $a1, 4($sp)                       # Exercita a area de argumentos reservada pelo chamador.
+    sw $a2, 8($sp)                       # Exercita a area de argumentos reservada pelo chamador.
+    sw $a3, 12($sp)                      # Exercita a area de argumentos reservada pelo chamador.
+ti_imprimirProximo:                      # Seleciona um caractere solicitado pela consulta.
+    lbu $t2, 0($t0)                      # Le o caractere atual.
+    beq $t2, $zero, ti_imprimirFim       # Finaliza ao encontrar o terminador.
+    nop                                  # Nao faz trabalho no atraso deste desvio.
+    lw $t3, ti_saidaPos                  # Le quantos caracteres foram guardados.
+    li $t1, 4095                         # Reserva o ultimo byte para o terminador.
+    bge $t3, $t1, ti_falha               # Detecta texto maior que o buffer.
+    nop                                  # Nao faz trabalho no atraso deste desvio.
+    la $t1, ti_saida                     # Seleciona o inicio da captura.
+    addu $t1, $t1, $t3                   # Localiza a posicao seguinte.
+    sb $t2, 0($t1)                       # Guarda o caractere que seria mostrado.
     sb $zero, 1($t1)                     # Mantem a captura terminada em zero.
-    addiu $t0, $t0, 1                    # Incrementa o tamanho.
-    sw $t0, ti_saidaPos                  # Guarda o tamanho atualizado.
-    addiu $a0, $a0, 1                    # Avanca na string recebida.
-    j ti_capturarLoop                    # Continua a captura.
-    nop                                  # Protege o delay slot.
-ti_capturarFim:                          # Altera todos os registradores que o escritor pode modificar.
-    li $t0, 100                          # Sobrescreve o temporario $t0.
-    li $t1, 101                          # Sobrescreve o temporario $t1.
-    li $t2, 102                          # Sobrescreve o temporario $t2.
-    li $t3, 103                          # Sobrescreve o temporario $t3.
-    li $t4, 104                          # Sobrescreve o temporario $t4.
-    li $t5, 105                          # Sobrescreve o temporario $t5.
-    li $t6, 106                          # Sobrescreve o temporario $t6.
-    li $t7, 107                          # Sobrescreve o temporario $t7.
-    li $t8, 108                          # Sobrescreve o temporario $t8.
-    li $t9, 109                          # Sobrescreve o temporario $t9.
-    li $a0, 200                          # Sobrescreve o argumento temporario $a0.
-    li $a1, 201                          # Sobrescreve o argumento temporario $a1.
-    li $a2, 202                          # Sobrescreve o argumento temporario $a2.
-    li $a3, 203                          # Sobrescreve o argumento temporario $a3.
-    li $v0, 300                          # Sobrescreve o primeiro retorno.
-    li $v1, 301                          # Sobrescreve o segundo retorno.
-    multu $t0, $t1                       # Sobrescreve HI e LO.
-    jr $ra                               # Retorna preservando salvos e pilha.
-    nop                                  # Protege o delay slot.
+    addiu $t3, $t3, 1                    # Atualiza o total guardado.
+    sw $t3, ti_saidaPos                  # Guarda o tamanho atualizado.
+    addiu $t0, $t0, 1                    # Avanca no texto original.
+    beq $a1, $zero, ti_imprimirProximo   # Limite zero permite continuar ate o terminador.
+    nop                                  # Nao faz trabalho no atraso deste desvio.
+    addiu $t4, $t4, -1                   # Desconta um caractere do limite.
+    bne $t4, $zero, ti_imprimirProximo   # Continua enquanto ainda pode imprimir caracteres.
+    nop                                  # Nao faz trabalho no atraso deste desvio.
+ti_imprimirFim:                          # Preserva argumentos, salvos e pilha, como a saida real.
+    li $t0, 100                          # Altera $t0 para verificar que o chamador nao depende dele.
+    li $t1, 101                          # Altera $t1 para verificar que o chamador nao depende dele.
+    li $t2, 102                          # Altera $t2 para verificar que o chamador nao depende dele.
+    li $t3, 103                          # Altera $t3 para verificar que o chamador nao depende dele.
+    li $t4, 104                          # Altera $t4 para verificar que o chamador nao depende dele.
+    li $t5, 105                          # Altera $t5 para verificar que o chamador nao depende dele.
+    li $t6, 106                          # Altera $t6 para verificar que o chamador nao depende dele.
+    li $t7, 107                          # Altera $t7 para verificar que o chamador nao depende dele.
+    li $t8, 108                          # Altera $t8 para verificar que o chamador nao depende dele.
+    li $t9, 109                          # Altera $t9 para verificar que o chamador nao depende dele.
+    li $v0, 300                          # Altera um retorno temporario.
+    li $v1, 301                          # Altera o outro retorno temporario.
+    multu $t0, $t1                       # Altera HI e LO, que tambem sao temporarios.
+    jr $ra                               # Volta para a consulta.
+    nop                                  # Nao faz trabalho no atraso deste retorno.
 
 ti_compararStrings:                      # Compara textos sem chamar as rotinas do projeto.
     lbu $t0, 0($a0)                      # Le um byte do texto real.
     lbu $t1, 0($a1)                      # Le um byte do texto esperado.
     bne $t0, $t1, ti_stringsDiferentes   # Identifica uma divergencia.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     beq $t0, $zero, ti_stringsIguais     # Finaliza quando ambos chegam ao terminador.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
     addiu $a0, $a0, 1                    # Avanca no texto real.
     addiu $a1, $a1, 1                    # Avanca no texto esperado.
     j ti_compararStrings                 # Continua a comparacao integral.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_stringsDiferentes:                    # Retorna divergencia.
     li $v0, 1                            # Informa que os textos diferem.
     jr $ra                               # Retorna ao verificador.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
 ti_stringsIguais:                        # Retorna igualdade.
     move $v0, $zero                      # Informa que os textos sao identicos.
     jr $ra                               # Retorna ao verificador.
-    nop                                  # Protege o delay slot.
+    nop                                  # Nao faz trabalho no atraso do salto.
 
 ti_falha:                                # Encerra ao encontrar qualquer resultado incorreto.
     la $a0, ti_fail                      # Seleciona a mensagem de falha.
