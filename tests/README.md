@@ -1,108 +1,134 @@
-# Suíte de Testes Unitários do Projeto (MARS MIPS)
+# Testes isolados das rotinas de apartamentos
 
-Este diretório contém os testes unitários automatizados para os módulos do sistema de gerenciamento de condomínio em Assembly MIPS.
+`limparAp_zerarRegiao_teste.asm` verifica a auxiliar `limparAp_zerarRegiao`, definida em `src/apartamento/limparAp.asm`. O teste usa sua propria memoria e nao depende do shell nem de um layout definitivo de apartamento.
 
----
+Esta entrega ainda nao implementa `limparAp --AP`. A integracao devera validar o apartamento, selecionar as regioes mutaveis corretas, atualizar o estado conforme o layout do grupo e usar a saida compartilhada do sistema. Zerar bytes so e adequado para campos cuja representacao de vazio seja zero.
 
-## 1. Testes Disponíveis
+## Executar no MARS
 
-### 1.1. Adição de Automóveis (`addAuto_teste.asm`)
-Ambiente de testes unitários isolado para validar integralmente as rotinas do módulo [`src/automovel/addAuto.asm`](../src/automovel/addAuto.asm):
-- `addAuto_validar_capacidade`: validação de regras de negócio, compatibilidade e capacidade da garagem (máximo 1 carro ou até 3 motos por apartamento).
-- `addAuto_inserir` (e alias `addAuto_adicionar`): gravação de tipo, modelo e placa no próximo slot livre do apartamento, atualização do cabeçalho do AP e garantia de terminação nula.
+Na raiz do repositorio, com Java disponivel:
 
-### 1.2. Remoção de Automóveis (`rmvAuto_teste.asm`)
-Ambiente de testes unitários isolado para validar integralmente as rotinas do módulo [`src/automovel/rmvAuto.asm`](../src/automovel/rmvAuto.asm):
-- `rmvAuto_busca_placa`: rotina de localização de automóvel por placa dentro dos slots registrados do AP, com busca tolerante a maiúsculas/minúsculas (*case-insensitive*) e validações de limites.
-- `rmvAuto_remover` (e alias `rmvAuto_excluir`): remoção do veículo localizado por placa, compactação do array de slots (deslocamento dos slots subsequentes à esquerda), limpeza ativa do último slot liberado (todos os 48 bytes zerados), decremento de `num_veiculos` e reset de `tipo_veiculo` para `0` quando o apartamento fica sem veículos.
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000 tests/limparAp_zerarRegiao_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000 tests/limparAp_zerarRegiao_teste.asm
+```
 
-Os testes alocam seus próprios buffers de apartamento em memória `.data` com sentinelas de segurança (*canary words* `0xDEADBEEF` e `0xCAFEBABE`), canários nos registradores `$s0-$s7` e não dependem do shell nem de chamadas com MMIO.
+A segunda execucao habilita delayed branching. As duas devem imprimir `PASS: limparAp_zerarRegiao (6 cenarios)` e terminar com codigo zero. Falhas nas verificacoes, na montagem ou na simulacao retornam codigo diferente de zero. Atingir o limite de 10000 instrucoes sem a mensagem PASS tambem indica falha.
 
----
+Pela interface grafica, abrir somente o arquivo de teste e deixar desmarcada a opcao `Assemble all files in directory`. Montar e executar. O teste imprime seu resultado no terminal padrao do MARS; isso nao define a entrada e saida do shell, que o grupo escolheu implementar com MMIO.
 
-## 2. Como Executar no Simulador MARS
+## Cenarios
 
-Os testes foram desenvolvidos com compatibilidade estrita para execução padrão e execução com **Delayed Branching (`-db`)** ativado (todos os desvios e saltos contêm salvaguarda de *delay slot* com `nop`).
+1. Limpar quatro bytes, verificar cada byte e conferir os argumentos preservados.
+2. Solicitar tamanho zero sem modificar a memoria.
+3. Rejeitar tamanho negativo sem modificar a memoria.
+4. Rejeitar endereco nulo com tamanho positivo, sem acessar a memoria.
+5. Aceitar endereco nulo com tamanho zero, sem acessar a memoria.
+6. Repetir a limpeza de uma regiao ja zerada.
 
-### Execução via Linha de Comando (CLI)
+Ao final, verificar que as marcas imediatamente anterior e posterior e o dado representando outro apartamento permaneceram intactos.
 
-Na raiz do repositório, com o Java instalado:
+## Teste da limpeza dos veiculos
 
-#### Teste de Remoção de Automóveis (`rmvAuto_teste.asm`):
-- **Execução Padrão:**
-  ```bash
-  java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/rmvAuto_teste.asm
-  ```
-- **Execução com Delayed Branching Habilitado:**
-  ```bash
-  java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/rmvAuto_teste.asm
-  ```
+`limparAp_limparVeiculos_teste.asm` verifica a rotina `limparAp_limparVeiculos`, que recebe o endereco base de um registro de AP valido. O retorno e zero no sucesso ou -1 para endereco nulo.
 
-#### Teste de Adição de Automóveis (`addAuto_teste.asm`):
-- **Execução Padrão:**
-  ```bash
-  java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/addAuto_teste.asm
-  ```
-- **Execução com Delayed Branching Habilitado:**
-  ```bash
-  java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/addAuto_teste.asm
-  ```
+A rotina usa o layout publicado por Brenno no commit `1288444580b80bdbb473b44f64249d306430207f` da branch `feat/automovel-adicao`: contador em +296, tipo geral em +300 e tres slots de 48 bytes a partir de +304. Ela zera somente os 152 bytes de +296 a +447, inclusive residuos em slots nao contados. As constantes de limpeza possuem prefixo proprio para nao colidir com as de `addAuto.asm`.
 
-#### Parâmetros Utilizados:
-- `nc`: suprime avisos de copyright do simulador MARS.
-- `sm`: inicia a execução diretamente no rótulo `main`.
-- `db`: ativa a emulação de *Delayed Branching* da arquitetura MIPS (executa instrução no slot de atraso).
-- `ae1`: encerra o simulador com código de erro 1 em caso de exceção na montagem/execução.
-- `se1`: direciona mensagens do MARS para o fluxo de erro padrão (stderr).
-- `100000`: limite máximo de instruções executadas (evita laços infinitos em caso de regressão).
+Os 296 bytes anteriores sao dados opacos neste teste: nenhuma estrutura de moradores e presumida. A quantidade de memoria reservada para o teste tambem nao define o tamanho definitivo de um AP.
 
-Ambas as execuções devem imprimir a confirmação de aprovação dos 7 cenários e retornar **código de saída 0**.
+Executar separadamente do teste anterior, a partir da raiz do repositorio:
 
-### Execução via Interface Gráfica (GUI) do MARS
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/limparAp_limparVeiculos_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/limparAp_limparVeiculos_teste.asm
+```
 
-1. Abra o simulador MARS:
-   ```bash
-   java -jar Mars4_5.jar
-   ```
-2. No menu **Settings**, certifique-se de que a opção **"Assemble all files in directory"** esteja **desmarcada**.
-3. Abra o arquivo de teste desejado (`tests/rmvAuto_teste.asm` ou `tests/addAuto_teste.asm`) via **File -> Open**.
-4. Monte o programa (**Run -> Assemble** ou tecla `F3`).
-5. Execute (**Run -> Go** ou tecla `F5`).
-6. Os resultados de cada asserção e o relatório final serão exibidos na aba **Run I/O**.
+O resultado esperado em ambas as execucoes e `PASS: limparAp_limparVeiculos (6 cenarios)`, com codigo de saida zero. Montagem, simulacao ou verificacao com erro devem terminar com codigo nao zero. Atingir o limite de instrucoes sem a mensagem PASS tambem indica falha.
 
----
+Os seis cenarios sao: cabecalho indicando um carro; cabecalho indicando tres motos; garagem ja vazia; contador zero com residuos nos slots; endereco nulo; repeticao da limpeza sem preparar novos dados. Os slots usam padroes artificiais de bytes para detectar qualquer dado nao limpo; o teste nao executa o comando `addAuto` nem o shell.
 
-## 3. Cenários de Teste Cobertos para `rmvAuto_teste.asm`
+As verificacoes conferem todos os bytes da garagem, todos os bytes anteriores, uma marca posterior e um dado externo. Tambem conferem os quatro argumentos, dois registradores salvos e o equilibrio da pilha nas chamadas validas. No caminho de endereco nulo, conferem retorno, argumentos usados, pilha e preservacao da memoria.
 
-| Cenário | Descrição | Comportamento Esperado |
-| :---: | :--- | :--- |
-| **1** | **Remoção do único carro do AP** | Sucesso (`$v0 = 0`), decremento de `num_veiculos` de 1 para 0, reset de `tipo_veiculo` para 0, limpeza completa do Slot 0 (12 words zeradas). Sentinelas e registradores salvos `$s0-$s7` intactos. |
-| **2** | **Remoção de moto intermediária com compactação (M1, M2, M3)** | Sucesso (`$v0 = 0`). Remoção da moto M2 (Slot 1); translação da moto M3 do Slot 2 para o Slot 1; Slot 0 mantido intacto com M1; Slot 2 completamente zerado (12 words zeradas); `num_veiculos` atualizado para 2; `tipo_veiculo` mantido como `'m'`. |
-| **3** | **Remoção da última moto** | Sucesso (`$v0 = 0`). Remoção da moto M3 (Slot 1); Slot 0 mantido intacto com M1; Slot 1 e Slot 2 completamente zerados; `num_veiculos` atualizado para 1; `tipo_veiculo` mantido como `'m'`. |
-| **4** | **Remoção com busca case-insensitive** | Busca e remoção da placa `"abc1234"` (minúscula) em veículo cadastrado como `"ABC1234"` (maiúscula). Sucesso tanto em `rmvAuto_busca_placa` (`$v0 = 0`, `$v1 = +304`) quanto em `rmvAuto_remover` (`$v0 = 0`, `num_veiculos = 0`, `tipo_veiculo = 0`, slot zerado). Testes adicionais de prefixo e formato. |
-| **5** | **Erro ao buscar placa inexistente no AP** | Retorno de erro (`$v0 = -1`, `$v1 = 0`) tanto em `rmvAuto_busca_placa` quanto em `rmvAuto_remover` ao pesquisar placa não cadastrada. O estado da memória do AP permanece estritamente inalterado (`num_veiculos` e dados dos slots intactos). |
-| **6** | **Erro ao tentar remover em AP com 0 veículos** | Retorno de erro (`$v0 = -1`, `$v1 = 0`) para apartamento com `num_veiculos == 0`. Memória e sentinelas inalterados. |
-| **7** | **Validação de limites de parâmetros (ponteiros nulos)** | Retorno de erro (`$v0 = -2`, `$v1 = 0`) para `$a0 == 0` (AP nulo) ou `$a1 == 0` (string de placa nula) em `rmvAuto_remover`, `rmvAuto_excluir` e `rmvAuto_busca_placa`. Sentinelas e memória do buffer intactos. |
+A nova rotina ainda nao e o comando completo `limparAp --AP`: ela nao identifica o apartamento pelo numero, nao remove moradores nem atualiza sua ocupacao. Essas etapas dependem dos contratos restantes do grupo. O teste usa syscalls apenas para informar seu resultado; a entrada e saida do shell continua prevista por MMIO.
 
----
+## Teste da limpeza do registro sob contrato proposto
 
-## 4. Interpretação dos Resultados
+`limparAp_executar_teste.asm` monta uma tabela ficticia de 24 apartamentos e verifica `limparAp_executar`. O contrato de identificacao, moradores e ocupacao e uma proposta descrita em `docs/contrato_apartamentos.md`, ainda sujeita a revisao do grupo. A garagem segue o layout ja publicado em `addAuto.asm`.
 
-- **Sucesso Global**:
-  O teste finaliza imprimindo:
-  ```text
-  === INICIANDO SUITE DE TESTES UNITARIOS: rmvAuto ===
-  [CENARIO 1] SUCESSO: Remocao do unico carro do AP (num: 1->0, tipo: 'c'->0, slot zerado)
-  [CENARIO 2] SUCESSO: Remocao de moto do meio com compactacao (M1,M2,M3 -> M1,M3, num=2)
-  [CENARIO 3] SUCESSO: Remocao da ultima moto (slot 1 mantido, slot 2 zerado, num=1)
-  [CENARIO 4] SUCESSO: Remocao case-insensitive ('abc1234' vs 'ABC1234' -> remocao OK)
-  [CENARIO 5] SUCESSO: Erro ao buscar placa inexistente no AP (codigo -1, memoria intacta)
-  [CENARIO 6] SUCESSO: Erro ao tentar remover em AP com 0 veiculos (codigo -1)
-  [CENARIO 7] SUCESSO: Validacao de ponteiros nulos (codigo -2, sentinelas intactos)
+A rotina recebe a base da tabela, o numero inteiro do AP e o passo entre registros. Localiza o AP, preserva sua identificacao, limpa moradores e garagem e deixa a quantidade de moradores em zero, que neste contrato representa apartamento vazio. O retorno e zero com endereco do registro em `$v1`, ou -1 com endereco de `Falha: AP invalido\n` em `$v1`. A exibicao da mensagem pelo shell/MMIO ainda nao esta integrada.
 
-  PASS: rmvAuto_teste (todos os 7 cenarios aprovados com sucesso)
-  ```
-  e encerra com `syscall 17` e código `0`.
+Executar este programa separadamente dos dois testes anteriores, na raiz do repositorio:
 
-- **Falha**:
-  Caso ocorra divergência em qualquer asserção, o teste imprime a mensagem específica do cenário correspondente (ex.: `FAIL: Falha detectada no Cenario X...`) e encerra com `syscall 17` e código `1`.
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/limparAp_executar_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/limparAp_executar_teste.asm
+```
+
+O teste mostra ANTES e DEPOIS dos registros nos cenarios de sucesso, informa `OK cenario N` em cada verificacao e deve terminar com `PASS: limparAp_executar (12 cenarios)` e codigo zero. Erros de montagem, simulacao ou assercao devem retornar codigo nao zero. Atingir o limite sem a mensagem PASS tambem indica falha.
+
+Os cenarios cobrem:
+
+1. AP intermediario com dois moradores e carro.
+2. Ultimo AP com seis moradores e tres motos.
+3. Primeiro AP ja vazio.
+4. Numero de apartamento ausente da tabela.
+5. Base de tabela nula.
+6. Passo menor que o tamanho minimo de 448 bytes.
+7. Passo sem alinhamento de quatro bytes.
+8. Base de tabela sem alinhamento de quatro bytes.
+9. Numero de apartamento zero.
+10. Numero de apartamento negativo.
+11. Tabela compacta com passo de 448 bytes.
+12. Repeticao da limpeza na tabela compacta ja limpa.
+
+Em cada cenario sao conferidos todos os bytes dos 24 registros, preservacao dos identificadores e dados dos outros apartamentos, reserva posterior a garagem, sobra do buffer compacto, sentinelas externos, os quatro argumentos, todos os oito registradores salvos e o equilibrio da pilha. Nos erros, a mensagem retornada e comparada integralmente e toda a tabela deve permanecer inalterada.
+
+Os nomes e veiculos sao ficticios e criados pelo proprio teste, sem chamar os cadastros do grupo. A referencia reserva 512 bytes por registro, mas os cenarios tambem montam uma tabela com passo de 448. Os espacos de 48 bytes usados para nomes no exemplo nao sao uma decisao sobre o formato definitivo do cadastro de moradores.
+
+Este programa usa o terminal padrao do MARS somente para demonstrar e informar resultados. Nao cria um shell paralelo, nao define a tabela global do projeto, nao salva arquivos e nao comprova a integracao do comando `limparAp --AP` com MMIO. Os testes anteriores continuam necessarios para verificar os contratos das auxiliares.
+
+## Teste da consulta individual
+
+`infoAp_executar_teste.asm` verifica a consulta individual por numero de AP e sua saida completa, usando a proposta de contrato documentada em `docs/contrato_apartamentos.md`. O teste cria os dados ficticios e fornece um escritor que captura texto; nao chama o shell nem os cadastros dos colegas.
+
+Executar separadamente dos testes anteriores, na raiz do repositorio:
+
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/infoAp_executar_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/infoAp_executar_teste.asm
+```
+
+O resultado esperado nos dois modos e `PASS: infoAp_executar (24 cenarios)` com codigo zero. Erros de montagem, simulacao ou verificacao devem terminar com codigo nao zero. Atingir o limite de instrucoes sem PASS tambem indica falha. As primeiras quatro consultas sao exibidas no terminal depois da comparacao exata com o texto esperado.
+
+Os cenarios cobrem:
+
+1. AP vazio.
+2. morador sem veiculo.
+3. dois moradores e carro.
+4. seis moradores e tres motos.
+5. AP ausente.
+6. base nula.
+7. passo insuficiente.
+8. passo desalinhado.
+9. base desalinhada.
+10. escritor nulo.
+11. moradores acima do limite.
+12. veiculos acima dos slots.
+13. tipo carro com dois veiculos.
+14. nome no limite.
+15. tabela compacta.
+16. escritor desalinhado.
+17. garagem residual em AP vazio.
+18. moradores negativos.
+19. veiculos negativos.
+20. tipo geral desconhecido.
+21. nome sem terminador.
+22. AP zero.
+23. AP negativo.
+24. Escrita nos enderecos MMIO com disponibilidade simulada.
+
+Todos os cenarios de consulta comparam a saida completa, o retorno e a preservacao dos quatro argumentos, oito registradores salvos e pilha. Um snapshot confere todos os 12288 bytes da tabela ficticia e de suas reservas, e sentinelas protegem tabela e captura. Os cenarios com escritor valido usam uma captura que ocupa a area de argumentos e sobrescreve temporarios, argumentos, retornos e HI/LO, testando o contrato de chamada.
+
+O teste de MMIO sinaliza o bit de disponibilidade diretamente na memoria do simulador e verifica o caractere final no endereco de dados. Nao valida a janela grafica do dispositivo, teclado ou o shell integrado. Para uso real, conectar o Keyboard and Display MMIO Simulator e passar o endereco de `infoAp_escreverMMIO` como escritor.
+
+A consulta ainda usa uma proposta de nomes em seis espacos contiguos de 48 bytes. O grupo precisa aprovar ou ajustar esse contrato antes da integracao. A opcao `infoAp --all` ficara em uma entrega separada.
