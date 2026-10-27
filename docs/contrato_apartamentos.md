@@ -92,3 +92,9 @@ O teste MMIO simula disponibilidade em memoria; ele nao comprova a janela grafic
 ## Limpeza simplificada
 
 `limparAp_executar` mantem a interface e os resultados anteriores. Agora usa somente `$s0` para guardar o AP entre chamadas; `$t0` le o identificador e `$t1` conta a busca antes de chamar as auxiliares. Sua pilha passou de 64 para 32 bytes. As duas auxiliares de limpeza mantem suas interfaces. Os 24 cenarios anteriores continuam validos.
+
+## Consulta de todos os apartamentos
+
+`infoAp_listarTodos`, em `src/apartamento/infoApTodos.asm`, recebe tabela em `$a0` e passo em `$a1`. Chama a consulta individual para os numeros 101, 102, 201, 202, ate 1201 e 1202. Assim a saida fica ordenada mesmo quando os registros estao invertidos na memoria. A tabela precisa conter exatamente esses 24 IDs, validos e unicos.
+
+Retorna `$v0 = 0` e `$v1 = 24` ao concluir. No primeiro erro, interrompe e repassa status e mensagem da consulta individual; linhas anteriores podem ja ter sido mostradas. Preserva argumentos, registradores salvos e pilha, sem modificar a tabela. Usa quatro registradores salvos e uma pilha de 48 bytes. O chamador deve incluir consulta individual, consulta completa e impressao.

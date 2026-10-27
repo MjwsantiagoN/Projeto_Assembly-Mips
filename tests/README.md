@@ -141,4 +141,13 @@ Resultado esperado: `PASS: saidaApMMIO (3 cenarios)`.
 
 A disponibilidade do display e simulada diretamente no registrador de controle. Isso verifica os enderecos e o limite de leitura, mas nao substitui o teste com o dispositivo grafico conectado ao shell.
 
-O contrato dos nomes continua como proposta em seis espacos contiguos de 48 bytes. A opcao all fica em uma entrega separada. Para estudar as rotinas, consultar `docs/guia_apresentacao.md`.
+O contrato dos nomes continua como proposta em seis espacos contiguos de 48 bytes. Para estudar as rotinas, consultar `docs/guia_apresentacao.md`.
+
+## Teste de infoAp --all
+
+```text
+java -jar Mars4_5.jar nc sm ae1 se1 10000000 tests/infoApTodos_teste.asm
+java -jar Mars4_5.jar nc sm db ae1 se1 10000000 tests/infoApTodos_teste.asm
+```
+
+Ambos devem terminar com `PASS: infoAp_listarTodos (8 cenarios)` e codigo zero. Os casos verificam os 24 APs vazios com registros fisicamente invertidos e passos de 512 e 448 bytes, uma tabela com AP ocupado, base nula, passo insuficiente, passo desalinhado, ID ausente e contador invalido. A referencia compara o texto integral, inclusive ordem e quebras de linha. Confere argumentos, oito registradores salvos, pilha, todos os 12288 bytes reservados e sentinelas. A captura altera temporarios e HI/LO deliberadamente.

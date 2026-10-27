@@ -8,7 +8,7 @@ A lógica foi testada isoladamente no MARS. O formato dos moradores ainda é uma
 
 > Minha parte é limpar e consultar apartamentos. Cada apartamento ocupa um registro na memória. Primeiro procuro o número informado na tabela. Na limpeza, preservo a identificação e zero os campos de moradores e veículos. Na consulta, apenas leio os dados e os envio ao display. Os testes verificam que os outros apartamentos não foram alterados.
 
-Na versão atual, `infoAp --all` ainda fica para a próxima etapa. A consulta deste guia mostra um apartamento por chamada.
+`infoAp_executar` mostra um apartamento por chamada. `infoAp_listarTodos` reutiliza essa função para mostrar os 24 apartamentos em ordem.
 
 ## Quais arquivos explicar
 
@@ -220,6 +220,14 @@ O display recebe caracteres, não o inteiro 1102 diretamente como quatro dígito
 Os restos aparecem na ordem 2, 0, 1, 1. Por isso são guardados de trás para frente no buffer, formando `1102`.
 
 `mflo` lê o quociente e `mfhi` lê o resto. Somar 48 ao resto transforma o número 2 no caractere ASCII `2`, por exemplo. O byte zero termina a string. O buffer fica na pilha e não modifica o registro do AP.
+
+## Explicar a consulta de todos os apartamentos
+
+Em `infoApTodos.asm`, `$s0` mantém a tabela, `$s1` o passo, `$s2` o número a consultar e `$s3` quantos apartamentos já foram mostrados. A função chama `infoAp_executar` uma vez para cada número.
+
+Começa em 101. Depois de um número ímpar, soma 1: 101 vira 102. Depois de um número par, soma 99: 102 vira 201. Para ao completar 24 consultas. Como pede os números nessa ordem, não depende da ordem dos registros na memória e não precisa ordenar nem modificar a tabela.
+
+Se uma consulta falhar, interrompe a listagem e devolve o erro. Caso já tenha mostrado outros apartamentos, essas linhas permanecem na saída.
 
 ## Como funciona o MMIO
 
