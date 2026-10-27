@@ -4,33 +4,49 @@ Este diretório contém os testes unitários automatizados para os módulos do s
 
 ---
 
-## 1. Teste de Adição de Automóveis (`addAuto_teste.asm`)
+## 1. Testes Disponíveis
 
-O arquivo [`addAuto_teste.asm`](addAuto_teste.asm) é um ambiente de testes unitários isolado e automatizado para validar integralmente as rotinas do módulo [`src/automovel/addAuto.asm`](../src/automovel/addAuto.asm):
-- `addAuto_validar_capacidade`: validação de regras de negócio, compatibilidade e capacidade da garagem.
+### 1.1. Adição de Automóveis (`addAuto_teste.asm`)
+Ambiente de testes unitários isolado para validar integralmente as rotinas do módulo [`src/automovel/addAuto.asm`](../src/automovel/addAuto.asm):
+- `addAuto_validar_capacidade`: validação de regras de negócio, compatibilidade e capacidade da garagem (máximo 1 carro ou até 3 motos por apartamento).
 - `addAuto_inserir` (e alias `addAuto_adicionar`): gravação de tipo, modelo e placa no próximo slot livre do apartamento, atualização do cabeçalho do AP e garantia de terminação nula.
 
-O teste aloca seus próprios buffers de apartamento em memória `.data` com sentinelas de segurança (*canary words*), não dependendo do shell nem de chamadas com MMIO.
+### 1.2. Remoção de Automóveis (`rmvAuto_teste.asm`)
+Ambiente de testes unitários isolado para validar integralmente as rotinas do módulo [`src/automovel/rmvAuto.asm`](../src/automovel/rmvAuto.asm):
+- `rmvAuto_busca_placa`: rotina de localização de automóvel por placa dentro dos slots registrados do AP, com busca tolerante a maiúsculas/minúsculas (*case-insensitive*) e validações de limites.
+- `rmvAuto_remover` (e alias `rmvAuto_excluir`): remoção do veículo localizado por placa, compactação do array de slots (deslocamento dos slots subsequentes à esquerda), limpeza ativa do último slot liberado (todos os 48 bytes zerados), decremento de `num_veiculos` e reset de `tipo_veiculo` para `0` quando o apartamento fica sem veículos.
+
+Os testes alocam seus próprios buffers de apartamento em memória `.data` com sentinelas de segurança (*canary words* `0xDEADBEEF` e `0xCAFEBABE`), canários nos registradores `$s0-$s7` e não dependem do shell nem de chamadas com MMIO.
 
 ---
 
 ## 2. Como Executar no Simulador MARS
 
-Os testes foram desenvolvidos com compatibilidade estrita para execução padrão e execução com **Delayed Branching (`-db`)** ativado (todos os desvios e saltos contêm salvaguarda de *delay slot*).
+Os testes foram desenvolvidos com compatibilidade estrita para execução padrão e execução com **Delayed Branching (`-db`)** ativado (todos os desvios e saltos contêm salvaguarda de *delay slot* com `nop`).
 
 ### Execução via Linha de Comando (CLI)
 
 Na raiz do repositório, com o Java instalado:
 
-#### Execução Padrão:
-```bash
-java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/addAuto_teste.asm
-```
+#### Teste de Remoção de Automóveis (`rmvAuto_teste.asm`):
+- **Execução Padrão:**
+  ```bash
+  java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/rmvAuto_teste.asm
+  ```
+- **Execução com Delayed Branching Habilitado:**
+  ```bash
+  java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/rmvAuto_teste.asm
+  ```
 
-#### Execução com Delayed Branching Habilitado:
-```bash
-java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/addAuto_teste.asm
-```
+#### Teste de Adição de Automóveis (`addAuto_teste.asm`):
+- **Execução Padrão:**
+  ```bash
+  java -jar Mars4_5.jar nc sm ae1 se1 100000 tests/addAuto_teste.asm
+  ```
+- **Execução com Delayed Branching Habilitado:**
+  ```bash
+  java -jar Mars4_5.jar nc sm db ae1 se1 100000 tests/addAuto_teste.asm
+  ```
 
 #### Parâmetros Utilizados:
 - `nc`: suprime avisos de copyright do simulador MARS.
@@ -49,24 +65,24 @@ Ambas as execuções devem imprimir a confirmação de aprovação dos 7 cenári
    java -jar Mars4_5.jar
    ```
 2. No menu **Settings**, certifique-se de que a opção **"Assemble all files in directory"** esteja **desmarcada**.
-3. Abra exclusivamente o arquivo `tests/addAuto_teste.asm` (**File -> Open**).
+3. Abra o arquivo de teste desejado (`tests/rmvAuto_teste.asm` ou `tests/addAuto_teste.asm`) via **File -> Open**.
 4. Monte o programa (**Run -> Assemble** ou tecla `F3`).
 5. Execute (**Run -> Go** ou tecla `F5`).
 6. Os resultados de cada asserção e o relatório final serão exibidos na aba **Run I/O**.
 
 ---
 
-## 3. Cenários de Teste Cobertos
+## 3. Cenários de Teste Cobertos para `rmvAuto_teste.asm`
 
 | Cenário | Descrição | Comportamento Esperado |
 | :---: | :--- | :--- |
-| **1** | **Adição de 1 carro em AP vazio** | Sucesso (`$v0 = 0`), slot alocado em `AP + 304`, `num_veiculos = 1`, `tipo_veiculo = 'c'`. Modelo e placa copiados corretamente. Verificação estrita de preservação dos registradores salvos `$s0-$s7` e argumentos `$a0-$a1`. |
-| **2** | **Rejeição de 2º carro em AP com carro** | Erro de capacidade esgotada (`$v0 = -2`, `$v1 = 0`) tanto em `addAuto_validar_capacidade` quanto em `addAuto_inserir`. Estado do AP inalterado. |
-| **3** | **Rejeição de moto em AP com carro** | Erro de mútua exclusão (`$v0 = -2`, `$v1 = 0`) tanto com `'m'` quanto `'M'`. Estado do AP permanece com 1 carro e tipo `'c'`. |
-| **4** | **Adição de 3 motos consecutivas em AP vazio** | Sucesso nas 3 inserções (`$v0 = 0`), preenchendo os slots `+304`, `+352` e `+400`. Normalização de `'M'` maiúsculo para `'m'`. Ao final, `num_veiculos = 3` e `tipo_veiculo = 'm'`. |
-| **5** | **Rejeição de 4ª moto e mútua exclusão em AP com motos** | Erro de limite regulamentar (`$v0 = -2`, `$v1 = 0`) para 4ª moto e erro de incompatibilidade/mútua exclusão ao tentar adicionar carro em AP com motos. Quantidade de veículos permanece fixada em 3. |
-| **6** | **Rejeição de tipos inválidos e AP corrompido** | Erro de parâmetro inválido (`$v0 = -1`, `$v1 = 0`) para tipo `'x'`, tipo numérico `0` (validado em `addAuto_validar_capacidade` e `addAuto_inserir`), ponteiro de AP nulo (`$a0 = 0`) e registro com `num_veiculos < 0`. |
-| **7** | **Integridade de memória, offsets, truncamento e limpeza ativa** | Verificação dos offsets dos 3 slots (`+304`, `+352`, `+400`); garantia de limpeza ativa de todo o slot (12 words zeradas) sobre memória suja pré-preenchida (`0xAAAAAAAA`) com ponteiros nulos via alias `addAuto_adicionar`; teste de truncamento seguro sobre memória suja (`0xFFFFFFFF`) com verificação dos prefixos exatos de 31 chars (modelo) e 11 chars (placa) e terminação `\0`; inviolabilidade dos sentinelas de borda (`0xDEADBEEF` e `0xCAFEBABE`). |
+| **1** | **Remoção do único carro do AP** | Sucesso (`$v0 = 0`), decremento de `num_veiculos` de 1 para 0, reset de `tipo_veiculo` para 0, limpeza completa do Slot 0 (12 words zeradas). Sentinelas e registradores salvos `$s0-$s7` intactos. |
+| **2** | **Remoção de moto intermediária com compactação (M1, M2, M3)** | Sucesso (`$v0 = 0`). Remoção da moto M2 (Slot 1); translação da moto M3 do Slot 2 para o Slot 1; Slot 0 mantido intacto com M1; Slot 2 completamente zerado (12 words zeradas); `num_veiculos` atualizado para 2; `tipo_veiculo` mantido como `'m'`. |
+| **3** | **Remoção da última moto** | Sucesso (`$v0 = 0`). Remoção da moto M3 (Slot 1); Slot 0 mantido intacto com M1; Slot 1 e Slot 2 completamente zerados; `num_veiculos` atualizado para 1; `tipo_veiculo` mantido como `'m'`. |
+| **4** | **Remoção com busca case-insensitive** | Busca e remoção da placa `"abc1234"` (minúscula) em veículo cadastrado como `"ABC1234"` (maiúscula). Sucesso tanto em `rmvAuto_busca_placa` (`$v0 = 0`, `$v1 = +304`) quanto em `rmvAuto_remover` (`$v0 = 0`, `num_veiculos = 0`, `tipo_veiculo = 0`, slot zerado). Testes adicionais de prefixo e formato. |
+| **5** | **Erro ao buscar placa inexistente no AP** | Retorno de erro (`$v0 = -1`, `$v1 = 0`) tanto em `rmvAuto_busca_placa` quanto em `rmvAuto_remover` ao pesquisar placa não cadastrada. O estado da memória do AP permanece estritamente inalterado (`num_veiculos` e dados dos slots intactos). |
+| **6** | **Erro ao tentar remover em AP com 0 veículos** | Retorno de erro (`$v0 = -1`, `$v1 = 0`) para apartamento com `num_veiculos == 0`. Memória e sentinelas inalterados. |
+| **7** | **Validação de limites de parâmetros (ponteiros nulos)** | Retorno de erro (`$v0 = -2`, `$v1 = 0`) para `$a0 == 0` (AP nulo) ou `$a1 == 0` (string de placa nula) em `rmvAuto_remover`, `rmvAuto_excluir` e `rmvAuto_busca_placa`. Sentinelas e memória do buffer intactos. |
 
 ---
 
@@ -75,15 +91,16 @@ Ambas as execuções devem imprimir a confirmação de aprovação dos 7 cenári
 - **Sucesso Global**:
   O teste finaliza imprimindo:
   ```text
-  [CENARIO 1] SUCESSO: Adicao de 1 carro em AP vazio (num=1, tipo='c', slot=+304)
-  [CENARIO 2] SUCESSO: Rejeicao de 2o carro em AP com carro (codigo -2)
-  [CENARIO 3] SUCESSO: Rejeicao de moto em AP com carro (codigo -2)
-  [CENARIO 4] SUCESSO: Adicao de 3 motos em AP vazio (num=3, tipo='m', slots=+304, +352, +400)
-  [CENARIO 5] SUCESSO: Rejeicao de 4a moto em AP com 3 motos (codigo -2)
-  [CENARIO 6] SUCESSO: Rejeicao de tipos invalidos ('x', 0, AP nulo/invalido) com codigo -1
-  [CENARIO 7] SUCESSO: Integridade de memoria, offsets e terminadores nulos verificados
+  === INICIANDO SUITE DE TESTES UNITARIOS: rmvAuto ===
+  [CENARIO 1] SUCESSO: Remocao do unico carro do AP (num: 1->0, tipo: 'c'->0, slot zerado)
+  [CENARIO 2] SUCESSO: Remocao de moto do meio com compactacao (M1,M2,M3 -> M1,M3, num=2)
+  [CENARIO 3] SUCESSO: Remocao da ultima moto (slot 1 mantido, slot 2 zerado, num=1)
+  [CENARIO 4] SUCESSO: Remocao case-insensitive ('abc1234' vs 'ABC1234' -> remocao OK)
+  [CENARIO 5] SUCESSO: Erro ao buscar placa inexistente no AP (codigo -1, memoria intacta)
+  [CENARIO 6] SUCESSO: Erro ao tentar remover em AP com 0 veiculos (codigo -1)
+  [CENARIO 7] SUCESSO: Validacao de ponteiros nulos (codigo -2, sentinelas intactos)
 
-  PASS: addAuto_teste (todos os 7 cenarios aprovados com sucesso)
+  PASS: rmvAuto_teste (todos os 7 cenarios aprovados com sucesso)
   ```
   e encerra com `syscall 17` e código `0`.
 
