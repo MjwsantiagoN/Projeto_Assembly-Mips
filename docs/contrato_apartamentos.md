@@ -36,9 +36,9 @@ A rotina examina exatamente os 24 registros, comparando o identificador de cada 
 
 ## Integracao com o shell
 
-O shell ainda deve reconhecer `limparAp --AP`, converter seu argumento para numero e chamar esta rotina com a tabela e o passo aprovados pelo grupo. Em erro, deve imprimir a string apontada por `$v1` pela interface compartilhada de saida, prevista para MMIO. A rotina nao imprime por conta propria, nao salva arquivo e nao redefine o interpretador ou o MMIO.
+`src/apartamento/comandosAp.asm`, chamado por `src/main.asm`, reconhece `limparAp --AP`, converte o argumento e chama esta rotina com a tabela de integracao em `tabelaAp.asm`. Em erro, imprime a string apontada por `$v1` pela saida MMIO. A rotina de limpeza nao imprime por conta propria nem salva arquivo. O layout e a unificacao com o cadastro do grupo continuam sujeitos a revisao; ver `docs/integracao_apartamentos.md`.
 
-O teste isolado demonstra a limpeza em memoria; ele nao comprova que o comando ja esta integrado ao shell. As rotinas das duas etapas anteriores continuam com seus contratos originais.
+Os testes isolados demonstram a limpeza em memoria. `tests/comandosAp_teste.asm` verifica separadamente a ligacao dos comandos com a tabela real desta integracao. As rotinas auxiliares continuam com seus contratos originais.
 
 ## Entrega e dependencias
 
@@ -72,14 +72,14 @@ A saida mantem o formato: `AP: numero`; para AP sem moradores, `Apartamento vazi
 
 A funcao espera o bit zero de `0xFFFF0008` e envia o caractere a `0xFFFF000C`. A consulta usa limite 47 para nomes, 31 para modelos e 11 para placas, sem precisar copiar cada campo para outro buffer. Mensagens fixas usam limite zero.
 
-O futuro `src/main.asm` deve incluir os dois modulos, por exemplo:
+O `src/main.asm` inclui os dois modulos, alem da consulta completa, tabela, interpretador, limpeza e entrada MMIO. As inclusoes da consulta individual sao:
 
 ```asm
 .include "apartamento/infoAp.asm"
 .include "Auxiliares/saidaApMMIO.asm"
 ```
 
-Essas inclusoes nao substituem o ponto de entrada do shell. Conectar o Keyboard and Display MMIO Simulator para a execucao real. O exemplo antigo `MMIO.asm` continua separado, com seu proprio `main`.
+Conectar o Keyboard and Display MMIO Simulator para a execucao interativa. O exemplo antigo `MMIO.asm` continua separado, com seu proprio `main`, e nao deve ser montado junto.
 
 ## Testes da interface simplificada
 
@@ -92,3 +92,9 @@ O teste MMIO simula disponibilidade em memoria; ele nao comprova a janela grafic
 ## Limpeza simplificada
 
 `limparAp_executar` mantem a interface e os resultados anteriores. Agora usa somente `$s0` para guardar o AP entre chamadas; `$t0` le o identificador e `$t1` conta a busca antes de chamar as auxiliares. Sua pilha passou de 64 para 32 bytes. As duas auxiliares de limpeza mantem suas interfaces. Os 24 cenarios anteriores continuam validos.
+
+## Consulta de todos os apartamentos
+
+`infoAp_listarTodos`, em `src/apartamento/infoApTodos.asm`, recebe tabela em `$a0` e passo em `$a1`. Chama a consulta individual para os numeros 101, 102, 201, 202, ate 1201 e 1202. Assim a saida fica ordenada mesmo quando os registros estao invertidos na memoria. A tabela precisa conter exatamente esses 24 IDs, validos e unicos.
+
+Retorna `$v0 = 0` e `$v1 = 24` ao concluir. No primeiro erro, interrompe e repassa status e mensagem da consulta individual; linhas anteriores podem ja ter sido mostradas. Preserva argumentos, registradores salvos e pilha, sem modificar a tabela. Usa quatro registradores salvos e uma pilha de 48 bytes. O chamador deve incluir consulta individual, consulta completa e impressao.
