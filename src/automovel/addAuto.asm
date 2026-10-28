@@ -1,12 +1,9 @@
 # ==============================================================
-# Universidade Federal Rural de Pernambuco - UFRPE
-# Departamento de Estatistica e Informatica - DEINFO
-# Disciplina: Arquitetura e Organizacao de Computadores - 2026.2
-# Professor: Vitor A. Coutinho
-# Atividade: Projeto 01 (PE1 da 1a VA) - Assembly MIPS e MARS
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
+# Atividade: Projeto 01 - 1VA
+# Disciplina: Arquitetura e Organizacao de Computadores
+# Semestre letivo: 2026.2
 # Arquivo: addAuto.asm
-# Autor: Brenno Leite (brennolpereira@outlook.com.br)
 # Descricao: Rotinas de validacao de capacidade de garagem e insercao
 #            de automoveis no registro do apartamento.
 #            Cada AP suporta no maximo 1 carro OU ate 3 motos.
@@ -240,7 +237,7 @@ addAuto_inserir:                   # Ponto de entrada principal
 
     li    $t0, 0                   # Inicializa indice de copia do modelo i = 0
     li    $t1, 31                  # Limite maximo de caracteres uteis para modelo (31)
-ins_copia_mod_loop:
+ins_copia_mod_loop:             # Laco: copia um byte do modelo
     bge   $t0, $t1, ins_copia_mod_fim # Se atingiu 31 caracteres, encerra copia
     nop                            # Preenche o delay slot do desvio condicional
 
@@ -255,7 +252,7 @@ ins_copia_mod_loop:
     j     ins_copia_mod_loop       # Itera para o proximo caractere
     nop                            # Preenche o delay slot do salto incondicional
 
-ins_copia_mod_fim:
+ins_copia_mod_fim:              # Fim da copia do modelo
     addu  $t4, $s4, $t0            # Calcula posicao do terminador nulo no buffer
     sb    $zero, VEIC_OFF_MODELO($t4) # Assegura terminador nulo no modelo
 
@@ -265,7 +262,7 @@ ins_copiar_placa:                  # Passo 7: Copiar placa (+36 ate +47, max 12 
 
     li    $t0, 0                   # Inicializa indice de copia da placa j = 0
     li    $t1, 11                  # Limite maximo de caracteres uteis para placa (11)
-ins_copia_plc_loop:
+ins_copia_plc_loop:             # Laco: copia um byte da placa
     bge   $t0, $t1, ins_copia_plc_fim # Se atingiu 11 caracteres, encerra copia
     nop                            # Preenche o delay slot do desvio condicional
 
@@ -280,7 +277,7 @@ ins_copia_plc_loop:
     j     ins_copia_plc_loop       # Itera para o proximo caractere
     nop                            # Preenche o delay slot do salto incondicional
 
-ins_copia_plc_fim:
+ins_copia_plc_fim:              # Fim da copia da placa
     addu  $t4, $s4, $t0            # Calcula posicao do terminador nulo no buffer
     sb    $zero, VEIC_OFF_PLACA($t4) # Assegura terminador nulo na placa
 

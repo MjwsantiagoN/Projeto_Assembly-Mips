@@ -1,4 +1,5 @@
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# ==============================================================
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -8,9 +9,10 @@
 #            quantos estao vazios, com a porcentagem de cada um.
 #            Uso: infoGeral        (nao tem opcoes)
 # Entrada: $a0 = argc, $a1 = argv (ignorados). Preserva $s0-$s7.
+# ==============================================================
 
-.text
-cmd_infoGeral:
+.text                           # Segmento de codigo
+cmd_infoGeral:                  # Entrada do comando infoGeral
     addi $sp, $sp, -12             # Reserva espaco na pilha
     sw   $ra, 0($sp)               # Salva o endereco de retorno
     sw   $s0, 4($sp)               # Salva $s0 (contador de APs nao vazios)
@@ -19,11 +21,11 @@ cmd_infoGeral:
     la   $t0, ap_tabela           # $t0 = endereco do primeiro apartamento
     li   $t1, N_APS                 # $t1 = apartamentos que faltam verificar
     li   $s0, 0                    # $s0 = nao vazios = 0
-infoGeral_loop:
+infoGeral_loop:                 # Laco: examina um apartamento por iteracao
     lw   $t2, AP_QTD_MOR($t0)     # $t2 = numero de moradores do AP atual
     beq  $t2, $zero, infoGeral_prox # Se for 0, o AP esta vazio: nao conta
     addi $s0, $s0, 1               # AP nao vazio: conta mais um
-infoGeral_prox:
+infoGeral_prox:                 # Avanca para o proximo apartamento
     addi $t0, $t0, AP_TAM          # Avanca para o proximo apartamento
     addi $t1, $t1, -1              # Um AP a menos para verificar
     bne  $t1, $zero, infoGeral_loop # Repete ate verificar os N_APS apartamentos
@@ -66,9 +68,9 @@ infoGeral_prox:
     addi $sp, $sp, 12              # Libera a pilha
     jr   $ra                       # Volta para o shell
 
-.data
-ig_nvazios: .asciiz "Nao vazios: "
-ig_vazios:  .asciiz "Vazios:     "
-ig_abre:    .asciiz " ("
-ig_fecha:   .asciiz "%)\n"
-.text
+.data                           # Segmento de dados
+ig_nvazios: .asciiz "Nao vazios: "  # Rotulo dos nao vazios
+ig_vazios:  .asciiz "Vazios:     "  # Rotulo dos vazios
+ig_abre:    .asciiz " ("        # Abre parenteses antes da porcentagem
+ig_fecha:   .asciiz "%)\n"      # Fecha parenteses e quebra a linha
+.text                           # Volta ao segmento de codigo

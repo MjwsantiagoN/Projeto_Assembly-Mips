@@ -1,5 +1,5 @@
 # ==============================================================
-# Grupo: Brenno, Joao, Leticia e Marcos
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -10,19 +10,19 @@
 # Entrada:   $a0 = string do AP (option1), $a1 = string do nome (option2),
 #            ambas terminadas em NULL (o main separa as opcoes).
 # Saida:     $v0 = 0 se removeu, 1 se deu erro (a mensagem ja e impressa aqui).
-# Depende:   print_str (io.asm), ap_to_index, ap_base, strcmp, memcpy e
+# Depende:   print_str (Auxiliares/MMIO.asm), ap_to_index, ap_base, strcmp, memcpy e
 #            memzero (Auxiliares) e as constantes do layout.asm.
 # ==============================================================
 
-.data
+.data                           # Segmento de dados
 msg_rmv_ap_invalido: .asciiz "Falha: AP invalido\n"                  # erro de AP
 msg_rmv_nao_achou:   .asciiz "Falha: morador nao encontrado\n"       # erro de nome
 
-.text
-.globl rmvMorador
+.text                           # Segmento de codigo
+.globl rmvMorador               # Torna rmvMorador visivel para os outros arquivos
 
 # $a0 = AP (string), $a1 = nome (string)
-rmvMorador:
+rmvMorador:                     # Entrada da rotina rmvMorador
     addi $sp, $sp, -24              # reserva 6 palavras na pilha
     sw   $ra, 20($sp)               # salva o endereco de retorno
     sw   $s0, 16($sp)               # salva s0 (ponteiro do nome)
@@ -41,10 +41,11 @@ rmvMorador:
     lw   $s2, AP_QTD_MOR($s1)       # s2 = quantidade atual de moradores
     li   $s3, 0                     # s3 = 0 (comeca pelo primeiro slot)
 
-rmv_mor_busca:
+rmv_mor_busca:                  # Laco: compara o nome com um morador por iteracao
     bge  $s3, $s2, rmv_mor_nao_achou  # passou do ultimo morador: nao encontrou
-    sll  $t0, $s3, 5                # t0 = indice * 32
-    add  $s4, $s1, $t0              # s4 = base + indice*32
+    li   $t0, NOME_TAM              # t0 = tamanho do slot de nome
+    mul  $t0, $s3, $t0              # t0 = indice * NOME_TAM
+    add  $s4, $s1, $t0              # s4 = base + indice*NOME_TAM
     addi $s4, $s4, AP_NOMES         # s4 = endereco do slot do morador atual
     move $a0, $s4                   # a0 = nome cadastrado
     move $a1, $s0                   # a1 = nome digitado
@@ -53,19 +54,21 @@ rmv_mor_busca:
     addi $s3, $s3, 1                # proximo slot
     j    rmv_mor_busca              # continua procurando
 
-rmv_mor_achou:
+rmv_mor_achou:                  # Morador encontrado: compacta a lista de nomes
     sub  $t0, $s2, $s3              # t0 = qtd - indice
     addi $t0, $t0, -1               # t0 = quantos slots existem depois do removido
-    sll  $a2, $t0, 5                # a2 = bytes a mover (slots * 32)
+    li   $t1, NOME_TAM              # t1 = tamanho do slot de nome
+    mul  $a2, $t0, $t1              # a2 = bytes a mover (slots * NOME_TAM)
     move $a0, $s4                   # a0 = destino: slot do removido
     addi $a1, $s4, NOME_TAM         # a1 = origem: slot seguinte
     jal  memcpy                     # puxa os slots seguintes uma posicao para tras
 
     addi $t0, $s2, -1               # t0 = indice do ultimo slot ocupado
-    sll  $t0, $t0, 5                # t0 = indice * 32
-    add  $t0, $s1, $t0              # t0 = base + indice*32
+    li   $t1, NOME_TAM              # t1 = tamanho do slot de nome
+    mul  $t0, $t0, $t1              # t0 = indice * NOME_TAM
+    add  $t0, $s1, $t0              # t0 = base + indice*NOME_TAM
     addi $a0, $t0, AP_NOMES         # a0 = endereco do ultimo slot (agora duplicado)
-    li   $a1, NOME_TAM              # a1 = 32 bytes a zerar
+    li   $a1, NOME_TAM              # a1 = bytes do slot a zerar
     jal  memzero                    # zera o slot
 
     addi $s2, $s2, -1               # quantidade de moradores - 1
@@ -76,22 +79,22 @@ rmv_mor_achou:
     li   $a1, AP_AUTOS_TAM          # a1 = tamanho da area de automoveis
     jal  memzero                    # zera toda a area de automoveis
 
-rmv_mor_ok:
+rmv_mor_ok:                     # Remocao concluida: retorna 0
     li   $v0, 0                     # retorno: sucesso
     j    rmv_mor_fim                # vai para o epilogo
 
-rmv_mor_ap_invalido:
+rmv_mor_ap_invalido:            # AP invalido: mensagem de erro
     la   $a0, msg_rmv_ap_invalido   # a0 = mensagem de AP invalido
     jal  print_str                  # imprime
     li   $v0, 1                     # retorno: erro
     j    rmv_mor_fim                # vai para o epilogo
 
-rmv_mor_nao_achou:
+rmv_mor_nao_achou:              # Morador nao encontrado: mensagem de erro
     la   $a0, msg_rmv_nao_achou     # a0 = mensagem de morador nao encontrado
     jal  print_str                  # imprime
     li   $v0, 1                     # retorno: erro
 
-rmv_mor_fim:
+rmv_mor_fim:                    # Epilogo: restaura registradores e retorna
     lw   $s4, 0($sp)                # restaura s4
     lw   $s3, 4($sp)                # restaura s3
     lw   $s2, 8($sp)                # restaura s2

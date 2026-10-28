@@ -1,4 +1,5 @@
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# ==============================================================
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -12,21 +13,22 @@
 #            Uso: salvar        (nao tem opcoes)
 # Entrada: $a0 = argc, $a1 = argv (ignorados). Preserva $s0-$s7.
 # Obs.: o arquivo e criado no diretorio de trabalho do MARS.
+# ==============================================================
 
 .eqv ARQ_MAGICO 0x31444E43          # Identificador do formato do arquivo ("CND1")
 
-.data
+.data                           # Segmento de dados
 arq_base:      .asciiz "condominio.dat"   # Nome do arquivo externo (usado tambem por recarregar)
 arq_nome:      .space 48            # Nome efetivo usado no syscall (prefixos "./" + arq_base)
 arq_pref:      .word 0              # Quantos "./" prefixar (ver arq_abrir)
-.align 2
+.align 2                        # Alinha em palavra (4 bytes)
 arq_hdr:       .space 8             # Cabecalho do arquivo: magico + tamanho
-sv_ok:         .asciiz "Dados salvos em condominio.dat\n"
-sv_erro_abrir: .asciiz "Falha: nao foi possivel criar o arquivo\n"
-sv_erro_grava: .asciiz "Falha: erro ao gravar o arquivo\n"
+sv_ok:         .asciiz "Dados salvos em condominio.dat\n"  # Mensagem de sucesso
+sv_erro_abrir: .asciiz "Falha: nao foi possivel criar o arquivo\n"  # Mensagem de erro ao abrir
+sv_erro_grava: .asciiz "Falha: erro ao gravar o arquivo\n"  # Mensagem de erro ao gravar
 
-.text
-cmd_salvar:
+.text                           # Segmento de codigo
+cmd_salvar:                     # Entrada do comando salvar
     addi $sp, $sp, -8              # Reserva espaco na pilha
     sw   $ra, 0($sp)               # Salva o endereco de retorno
     sw   $s0, 4($sp)               # Salva $s0 (descritor do arquivo)
@@ -63,15 +65,15 @@ cmd_salvar:
     la   $a0, sv_ok                # Mensagem de sucesso
     j    salvar_fim                 # Vai imprimir e sair
 
-salvar_erro_grava:
+salvar_erro_grava:              # Erro de gravacao: fecha o arquivo e escolhe a mensagem
     move $a0, $s0                  # Descritor do arquivo
     li   $v0, 16                   # Syscall 16 = fechar arquivo
     syscall                         # Fecha mesmo com erro
     la   $a0, sv_erro_grava        # Mensagem de erro de gravacao
     j    salvar_fim                 # Vai imprimir e sair
-salvar_erro_abrir:
+salvar_erro_abrir:              # Erro ao abrir: escolhe a mensagem
     la   $a0, sv_erro_abrir        # Mensagem de erro ao abrir
-salvar_fim:
+salvar_fim:                     # Imprime a mensagem escolhida e retorna
     jal  mmio_print_string          # Escreve a mensagem escolhida
     lw   $s0, 4($sp)               # Restaura $s0
     lw   $ra, 0($sp)               # Restaura o endereco de retorno
@@ -85,18 +87,18 @@ salvar_fim:
 # com o mesmo nome (nem para criar). Por isso, apos uma falha passamos a usar um
 # nome equivalente ("./condominio.dat", ".//condominio.dat", ...) nas proximas
 # aberturas. Na escrita, se o nome estiver ocupado, tenta de novo com outro (ate 3x).
-arq_abrir:
+arq_abrir:                      # Entrada de arq_abrir
     addi $sp, $sp, -12              # Reserva espaco na pilha
     sw   $ra, 0($sp)                # Salva o endereco de retorno
     sw   $s0, 4($sp)                # Salva $s0 (flag de abertura)
     sw   $s1, 8($sp)                # Salva $s1 (tentativas restantes)
     move $s0, $a1                   # $s0 = flag (0 leitura / 1 escrita)
     li   $s1, 3                     # Ate 3 tentativas (so usadas na escrita)
-arq_abrir_tenta:
+arq_abrir_tenta:                # Monta o nome do arquivo e tenta abrir
     la   $t0, arq_nome              # $t0 = onde montar o nome
     la   $t1, arq_pref              # Endereco do contador de prefixos
     lw   $t2, 0($t1)                # $t2 = quantidade de "./" a colocar
-arq_abrir_pref:
+arq_abrir_pref:                 # Laco: escreve um prefixo "./" por iteracao
     beq  $t2, $zero, arq_abrir_base # Terminou os prefixos
     li   $t3, 46                    # '.'
     sb   $t3, 0($t0)                # Escreve '.'
@@ -105,7 +107,7 @@ arq_abrir_pref:
     addi $t0, $t0, 2                # Avanca 2 bytes
     addi $t2, $t2, -1               # Um prefixo a menos
     j    arq_abrir_pref             # Repete
-arq_abrir_base:
+arq_abrir_base:                 # Completa o nome com "condominio.dat" e abre
     move $a0, $t0                   # Destino = fim dos prefixos
     la   $a1, arq_base              # Origem = "condominio.dat"
     jal  strcpy                     # Completa o nome (Auxiliares/strcpy)
@@ -124,7 +126,7 @@ arq_abrir_base:
     beq  $s0, $zero, arq_abrir_ret  # Leitura: nao insiste (arquivo nao existe mesmo)
     addi $s1, $s1, -1               # Escrita: gasta uma tentativa
     bgtz $s1, arq_abrir_tenta       # Tenta de novo com o novo nome
-arq_abrir_ret:
+arq_abrir_ret:                  # Epilogo: restaura registradores e retorna
     lw   $s1, 8($sp)                # Restaura $s1
     lw   $s0, 4($sp)                # Restaura $s0
     lw   $ra, 0($sp)                # Restaura o endereco de retorno

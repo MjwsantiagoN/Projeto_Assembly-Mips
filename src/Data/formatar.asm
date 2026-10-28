@@ -1,4 +1,5 @@
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# ==============================================================
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -9,18 +10,19 @@
 #            "salvar" depois para gravar o estado formatado.
 #            Uso: formatar        (nao tem opcoes)
 # Entrada: $a0 = argc, $a1 = argv (ignorados). Preserva $s0-$s7.
+# ==============================================================
 
-.data
-fm_ok: .asciiz "Dados da execucao atual apagados (use salvar para gravar no arquivo)\n"
+.data                           # Segmento de dados
+fm_ok: .asciiz "Dados da execucao atual apagados (use salvar para gravar no arquivo)\n"  # Mensagem de confirmacao
 
-.text
-cmd_formatar:
+.text                           # Segmento de codigo
+cmd_formatar:                   # Entrada do comando formatar
     addi $sp, $sp, -4              # Reserva espaco na pilha
     sw   $ra, 0($sp)               # Salva o endereco de retorno
     la   $t0, ap_tabela           # $t0 = inicio do bloco de dados
     li   $t1, COND_TAM             # $t1 = tamanho em bytes
     srl  $t1, $t1, 2               # $t1 = quantidade de words (bytes / 4)
-formatar_loop:
+formatar_loop:                  # Laco: zera uma word por iteracao
     sw   $zero, 0($t0)             # Zera uma word (0 moradores, 0 autos, nomes vazios)
     addi $t0, $t0, 4               # Avanca para a proxima word
     addi $t1, $t1, -1              # Uma word a menos
