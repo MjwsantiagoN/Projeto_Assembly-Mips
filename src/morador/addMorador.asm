@@ -1,5 +1,5 @@
 # ==============================================================
-# Grupo: Brenno, Joao, Leticia e Marcos
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -9,18 +9,18 @@
 # Entrada:   $a0 = string do AP (option1), $a1 = string do nome (option2),
 #            ambas terminadas em NULL (o main separa as opcoes).
 # Saida:     $v0 = 0 se adicionou, 1 se deu erro (a mensagem ja e impressa aqui).
-# Depende:   print_str (io.asm, $a0 = string), ap_to_index, ap_base, strlen e memcpy (Auxiliares).
+# Depende:   print_str (Auxiliares/MMIO.asm, $a0 = string), ap_to_index, ap_base, strlen e memcpy (Auxiliares).
 # ==============================================================
 
-.data
+.data                           # Segmento de dados
 msg_add_ap_invalido: .asciiz "Falha: AP invalido\n"                          # erro de AP
 msg_add_ap_cheio:    .asciiz "Falha: AP com numero max de moradores\n"      # erro de limite
 
-.text
-.globl addMorador
+.text                           # Segmento de codigo
+.globl addMorador               # Torna addMorador visivel para os outros arquivos
 
 # $a0 = AP (string), $a1 = nome (string)
-addMorador:
+addMorador:                     # Entrada da rotina addMorador
     addi $sp, $sp, -20              # reserva 5 palavras na pilha
     sw   $ra, 16($sp)               # salva o endereco de retorno
     sw   $s0, 12($sp)               # salva s0 (usaremos para o nome / tamanho)
@@ -40,17 +40,19 @@ addMorador:
     li   $t0, MAX_MORADORES         # t0 = 6
     bge  $s2, $t0, add_mor_cheio    # se ja tem 6 (ou mais), recusa
 
-    sll  $t1, $s2, 5                # t1 = qtd * 32 (cada slot tem 32 bytes)
-    add  $s3, $s1, $t1              # s3 = base + qtd*32
+    li   $t1, NOME_TAM              # t1 = tamanho de cada slot de nome (48 bytes)
+    mul  $t1, $s2, $t1              # t1 = qtd * NOME_TAM
+    add  $s3, $s1, $t1              # s3 = base + qtd*NOME_TAM
     addi $s3, $s3, AP_NOMES         # s3 = endereco do primeiro slot livre
 
     move $a0, $s0                   # a0 = nome
     jal  strlen                     # v0 = tamanho do nome
-    li   $t0, 31                    # t0 = maximo de caracteres (32 - NULL)
+    li   $t0, NOME_TAM              # t0 = tamanho do slot
+    addi $t0, $t0, -1               # t0 = maximo de caracteres (slot - NULL = 47)
     ble  $v0, $t0, add_mor_copia    # se cabe, segue
-    li   $v0, 31                    # senao, trunca em 31 caracteres
+    move $v0, $t0                   # senao, trunca no maximo de caracteres
 
-add_mor_copia:
+add_mor_copia:                  # Copia o nome para o slot livre
     move $a0, $s3                   # a0 = destino (slot livre)
     move $a1, $s0                   # a1 = origem (nome)
     move $a2, $v0                   # a2 = quantidade de bytes a copiar
@@ -64,18 +66,18 @@ add_mor_copia:
     li   $v0, 0                     # retorno: sucesso
     j    add_mor_fim                # vai para o epilogo
 
-add_mor_ap_invalido:
+add_mor_ap_invalido:            # AP invalido: mensagem de erro
     la   $a0, msg_add_ap_invalido   # a0 = mensagem de AP invalido
     jal  print_str                  # imprime
     li   $v0, 1                     # retorno: erro
     j    add_mor_fim                # vai para o epilogo
 
-add_mor_cheio:
+add_mor_cheio:                  # AP cheio: mensagem de erro
     la   $a0, msg_add_ap_cheio      # a0 = mensagem de limite de moradores
     jal  print_str                  # imprime
     li   $v0, 1                     # retorno: erro
 
-add_mor_fim:
+add_mor_fim:                    # Epilogo: restaura registradores e retorna
     lw   $s3, 0($sp)                # restaura s3
     lw   $s2, 4($sp)                # restaura s2
     lw   $s1, 8($sp)                # restaura s1

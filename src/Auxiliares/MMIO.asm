@@ -1,4 +1,5 @@
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# ==============================================================
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -11,138 +12,139 @@
 #            Backspace ja funciona); o display mostra apenas o que o programa imprime.
 # Convencao: argumentos em $a0-$a1, retorno em $v0.
 #            Podem alterar $t0-$t5 e $v0. $s0-$s7 sao preservados.
+# ==============================================================
 
-.eqv MMIO_KBD_CTRL   0xFFFF0000
-.eqv MMIO_KBD_DATA   0xFFFF0004
-.eqv MMIO_DSP_CTRL   0xFFFF0008
-.eqv MMIO_DSP_DATA   0xFFFF000C
+.eqv MMIO_KBD_CTRL   0xFFFF0000 # Registrador de controle do teclado (bit 0 = tecla pronta)
+.eqv MMIO_KBD_DATA   0xFFFF0004 # Registrador de dados do teclado
+.eqv MMIO_DSP_CTRL   0xFFFF0008 # Registrador de controle do display (bit 0 = pronto)
+.eqv MMIO_DSP_DATA   0xFFFF000C # Registrador de dados do display
 
-.data
+.data                           # Segmento de dados
 mmio_numbuf: .space 12              # buffer de mmio_print_int
 
-.text
+.text                           # Segmento de codigo
 
 # mmio_getchar: espera uma tecla. $v0 = caractere
-mmio_getchar:
-    li   $t0, MMIO_KBD_CTRL
-mmio_getchar_poll:
-    lw   $t1, 0($t0)
-    andi $t1, $t1, 1
-    beq  $t1, $zero, mmio_getchar_poll
-    li   $t0, MMIO_KBD_DATA
+mmio_getchar:                   # Entrada de mmio_getchar
+    li   $t0, MMIO_KBD_CTRL     # $t0 = endereco do controle do teclado
+mmio_getchar_poll:              # Laco de polling: espera uma tecla
+    lw   $t1, 0($t0)            # Le o registrador de controle
+    andi $t1, $t1, 1            # Isola o bit 0 (tecla pronta)
+    beq  $t1, $zero, mmio_getchar_poll  # Bit 0 = 0: nenhuma tecla, continua esperando
+    li   $t0, MMIO_KBD_DATA     # $t0 = endereco do dado do teclado
     lw   $v0, 0($t0)                # ler o dado zera o bit de pronto
-    jr   $ra
+    jr   $ra                    # Retorna ($v0 = caractere)
 
 # mmio_putchar: espera o display ficar livre e escreve um caractere. $a0 = caractere
-mmio_putchar:
-    li   $t0, MMIO_DSP_CTRL
-mmio_putchar_poll:
-    lw   $t1, 0($t0)
-    andi $t1, $t1, 1
-    beq  $t1, $zero, mmio_putchar_poll
-    li   $t0, MMIO_DSP_DATA
-    sw   $a0, 0($t0)
-    jr   $ra
+mmio_putchar:                   # Entrada de mmio_putchar
+    li   $t0, MMIO_DSP_CTRL     # $t0 = endereco do controle do display
+mmio_putchar_poll:              # Laco de polling: espera o display ficar livre
+    lw   $t1, 0($t0)            # Le o registrador de controle
+    andi $t1, $t1, 1            # Isola o bit 0 (display pronto)
+    beq  $t1, $zero, mmio_putchar_poll  # Bit 0 = 0: display ocupado, continua esperando
+    li   $t0, MMIO_DSP_DATA     # $t0 = endereco do dado do display
+    sw   $a0, 0($t0)            # Escreve o caractere (aparece no display)
+    jr   $ra                    # Retorna
 
 # mmio_print_string: escreve uma string terminada em NUL. $a0 = endereco
-mmio_print_string:
-    move $t2, $a0
-mmio_print_string_loop:
-    lbu  $t3, 0($t2)
-    beq  $t3, $zero, mmio_print_string_fim
-    li   $t0, MMIO_DSP_CTRL
-mmio_print_string_poll:
-    lw   $t1, 0($t0)
-    andi $t1, $t1, 1
-    beq  $t1, $zero, mmio_print_string_poll
-    li   $t0, MMIO_DSP_DATA
-    sw   $t3, 0($t0)
-    addi $t2, $t2, 1
-    j    mmio_print_string_loop
-mmio_print_string_fim:
-    jr   $ra
+mmio_print_string:              # Entrada de mmio_print_string
+    move $t2, $a0               # $t2 percorre a string
+mmio_print_string_loop:         # Laco: imprime um caractere por iteracao
+    lbu  $t3, 0($t2)            # Caractere atual
+    beq  $t3, $zero, mmio_print_string_fim  # NUL: terminou a string
+    li   $t0, MMIO_DSP_CTRL     # $t0 = endereco do controle do display
+mmio_print_string_poll:         # Espera o display ficar livre
+    lw   $t1, 0($t0)            # Le o registrador de controle
+    andi $t1, $t1, 1            # Isola o bit 0 (display pronto)
+    beq  $t1, $zero, mmio_print_string_poll  # Display ocupado: continua esperando
+    li   $t0, MMIO_DSP_DATA     # $t0 = endereco do dado do display
+    sw   $t3, 0($t0)            # Escreve o caractere no display
+    addi $t2, $t2, 1            # Proximo caractere
+    j    mmio_print_string_loop # Repete
+mmio_print_string_fim:          # Fim da string
+    jr   $ra                    # Retorna
 
 # mmio_print_int: escreve um inteiro com sinal em decimal. $a0 = valor
-mmio_print_int:
-    addi $sp, $sp, -8
-    sw   $ra, 0($sp)
-    sw   $s0, 4($sp)
+mmio_print_int:                 # Entrada de mmio_print_int
+    addi $sp, $sp, -8           # Reserva 8 bytes na pilha
+    sw   $ra, 0($sp)            # Salva o endereco de retorno
+    sw   $s0, 4($sp)            # Salva $s0 (flag de sinal)
     li   $s0, 0                     # flag de sinal
-    la   $t4, mmio_numbuf
-    addi $t4, $t4, 11
-    sb   $zero, 0($t4)
-    bge  $a0, $zero, mmio_print_int_conv
-    li   $s0, 1
-    sub  $a0, $zero, $a0
-mmio_print_int_conv:
-    li   $t5, 10
-mmio_print_int_loop:
-    divu $a0, $t5
-    mfhi $t2
-    mflo $a0
-    addi $t2, $t2, 48
-    addi $t4, $t4, -1
-    sb   $t2, 0($t4)
-    bne  $a0, $zero, mmio_print_int_loop
-    beq  $s0, $zero, mmio_print_int_out
-    addi $t4, $t4, -1
+    la   $t4, mmio_numbuf       # $t4 = inicio do buffer de digitos
+    addi $t4, $t4, 11           # Aponta para o fim do buffer (12 bytes)
+    sb   $zero, 0($t4)          # Grava o NUL final
+    bge  $a0, $zero, mmio_print_int_conv  # Valor nao negativo: vai converter
+    li   $s0, 1                 # Valor negativo: marca o sinal
+    sub  $a0, $zero, $a0        # Troca o sinal do valor
+mmio_print_int_conv:            # Converte o valor em digitos
+    li   $t5, 10                # $t5 = 10 (base decimal)
+mmio_print_int_loop:            # Laco: extrai um digito por iteracao
+    divu $a0, $t5               # Divide o valor por 10
+    mfhi $t2                    # $t2 = resto (digito)
+    mflo $a0                    # $a0 = quociente
+    addi $t2, $t2, 48           # Converte o digito em ASCII
+    addi $t4, $t4, -1           # Recua uma posicao no buffer
+    sb   $t2, 0($t4)            # Grava o digito
+    bne  $a0, $zero, mmio_print_int_loop  # Ainda ha digitos: repete
+    beq  $s0, $zero, mmio_print_int_out  # Sem sinal negativo: vai imprimir
+    addi $t4, $t4, -1           # Recua uma posicao para o sinal
     li   $t2, 45                    # '-'
-    sb   $t2, 0($t4)
-mmio_print_int_out:
-    move $a0, $t4
-    jal  mmio_print_string
-    lw   $s0, 4($sp)
-    lw   $ra, 0($sp)
-    addi $sp, $sp, 8
-    jr   $ra
+    sb   $t2, 0($t4)            # Grava o "-" no buffer
+mmio_print_int_out:             # Imprime o numero convertido
+    move $a0, $t4               # $a0 = inicio do texto
+    jal  mmio_print_string      # Imprime a string
+    lw   $s0, 4($sp)            # Restaura $s0
+    lw   $ra, 0($sp)            # Restaura o endereco de retorno
+    addi $sp, $sp, 8            # Libera a pilha
+    jr   $ra                    # Retorna
 
 # mmio_read_line: le uma linha do teclado ate o Enter, sem eco no display.
 # Backspace (8 ou 127) remove o ultimo caractere do buffer. Excesso e descartado.
 # $a0 = buffer, $a1 = capacidade (com o NUL), $v0 = quantidade de caracteres
-mmio_read_line:
-    addi $sp, $sp, -20
-    sw   $ra, 0($sp)
-    sw   $s0, 4($sp)
-    sw   $s1, 8($sp)
-    sw   $s2, 12($sp)
-    sw   $s3, 16($sp)
+mmio_read_line:                 # Entrada de mmio_read_line
+    addi $sp, $sp, -20          # Reserva 20 bytes na pilha
+    sw   $ra, 0($sp)            # Salva o endereco de retorno
+    sw   $s0, 4($sp)            # Salva $s0 (buffer)
+    sw   $s1, 8($sp)            # Salva $s1 (maximo de caracteres)
+    sw   $s2, 12($sp)           # Salva $s2 (caracteres lidos)
+    sw   $s3, 16($sp)           # Salva $s3 (caractere atual)
     move $s0, $a0                   # inicio do buffer
     addi $s1, $a1, -1               # maximo de caracteres
     li   $s2, 0                     # caracteres lidos
-mmio_read_line_loop:
-    jal  mmio_getchar
-    move $s3, $v0
-    li   $t0, 10
+mmio_read_line_loop:            # Laco: le uma tecla por iteracao
+    jal  mmio_getchar           # Espera uma tecla
+    move $s3, $v0               # $s3 = tecla lida
+    li   $t0, 10                # 10 = Enter (LF)
     beq  $s3, $t0, mmio_read_line_fim   # Enter
-    li   $t0, 13
+    li   $t0, 13                # 13 = CR
     beq  $s3, $t0, mmio_read_line_fim   # CR tratado como Enter
-    li   $t0, 8
-    beq  $s3, $t0, mmio_read_line_bs
-    li   $t0, 127
-    beq  $s3, $t0, mmio_read_line_bs
-    slti $t0, $s3, 32
+    li   $t0, 8                 # 8 = Backspace
+    beq  $s3, $t0, mmio_read_line_bs  # Backspace: apaga o ultimo caractere
+    li   $t0, 127               # 127 = Delete
+    beq  $s3, $t0, mmio_read_line_bs  # Delete: apaga o ultimo caractere
+    slti $t0, $s3, 32           # Caractere de controle (< 32)?
     bne  $t0, $zero, mmio_read_line_loop # ignora outros caracteres de controle
     bge  $s2, $s1, mmio_read_line_loop   # buffer cheio
-    add  $t0, $s0, $s2
-    sb   $s3, 0($t0)
-    addi $s2, $s2, 1
-    j    mmio_read_line_loop
-mmio_read_line_bs:
+    add  $t0, $s0, $s2          # $t0 = posicao livre do buffer
+    sb   $s3, 0($t0)            # Guarda o caractere no buffer
+    addi $s2, $s2, 1            # Conta o caractere
+    j    mmio_read_line_loop    # Volta a esperar a proxima tecla
+mmio_read_line_bs:              # Tratamento do Backspace
     beq  $s2, $zero, mmio_read_line_loop # nada para apagar
-    addi $s2, $s2, -1
-    j    mmio_read_line_loop
-mmio_read_line_fim:
-    add  $t0, $s0, $s2
-    sb   $zero, 0($t0)
-    move $v0, $s2
-    lw   $s3, 16($sp)
-    lw   $s2, 12($sp)
-    lw   $s1, 8($sp)
-    lw   $s0, 4($sp)
-    lw   $ra, 0($sp)
-    addi $sp, $sp, 20
-    jr   $ra
+    addi $s2, $s2, -1           # Um caractere a menos no buffer
+    j    mmio_read_line_loop    # Volta a esperar a proxima tecla
+mmio_read_line_fim:             # Fim da linha: fecha a string
+    add  $t0, $s0, $s2          # $t0 = posicao final
+    sb   $zero, 0($t0)          # Grava o NUL terminador
+    move $v0, $s2               # $v0 = quantidade de caracteres lidos
+    lw   $s3, 16($sp)           # Restaura $s3
+    lw   $s2, 12($sp)           # Restaura $s2
+    lw   $s1, 8($sp)            # Restaura $s1
+    lw   $s0, 4($sp)            # Restaura $s0
+    lw   $ra, 0($sp)            # Restaura o endereco de retorno
+    addi $sp, $sp, 20           # Libera a pilha
+    jr   $ra                    # Retorna
 
 # print_str: nome usado por addMorador/rmvMorador (= mmio_print_string)
-print_str:
-    j    mmio_print_string
+print_str:                      # Entrada de print_str (apelido de mmio_print_string)
+    j    mmio_print_string      # Desvia para mmio_print_string

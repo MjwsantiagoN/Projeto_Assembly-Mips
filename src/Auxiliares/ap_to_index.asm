@@ -1,5 +1,5 @@
 # ==============================================================
-# Grupo: Brenno, Joao, Leticia e Marcos
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -8,16 +8,16 @@
 # Convencao: argumento em $a0, retorno em $v0. Usa apenas $t0-$t6 e $a0 (sem pilha).
 # ==============================================================
 
-.text
-.globl ap_to_index
+.text                           # Segmento de codigo
+.globl ap_to_index              # Torna ap_to_index visivel para os outros arquivos
 
 # $a0 = endereco da string do AP (ex.: "1102"), terminada em NULL
 # $v0 = indice do AP (0 a 23) ou -1 se invalido
-ap_to_index:
+ap_to_index:                    # Entrada da rotina ap_to_index
     li   $t0, 0                     # t0 = valor numerico acumulado
     li   $t1, 0                     # t1 = quantidade de digitos lidos
 
-ap_idx_loop:
+ap_idx_loop:                    # Laco: le um digito por vez
     lbu  $t2, 0($a0)                # le o caractere atual da string
     beq  $t2, $zero, ap_idx_fim     # NULL: terminou a string
     addi $t3, $t2, -48              # t3 = caractere - '0'
@@ -32,7 +32,7 @@ ap_idx_loop:
     addi $a0, $a0, 1                # avanca para o proximo caractere
     j    ap_idx_loop                # repete
 
-ap_idx_fim:
+ap_idx_fim:                     # Fim da string: valida quantidade de digitos, andar e final
     li   $t4, 3                     # t4 = 3 (minimo de digitos)
     blt  $t1, $t4, ap_idx_invalido  # menos de 3 digitos: invalido
     li   $t4, 100                   # t4 = 100
@@ -53,6 +53,6 @@ ap_idx_fim:
     add  $v0, $t5, $t6              # indice = (andar-1)*2 + (final-1)
     jr   $ra                        # retorna
 
-ap_idx_invalido:
+ap_idx_invalido:                # Saida de erro: retorna -1
     li   $v0, -1                    # retorna -1 (AP invalido)
     jr   $ra                        # retorna

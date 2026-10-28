@@ -1,4 +1,5 @@
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# ==============================================================
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -10,16 +11,17 @@
 #            e lido para um buffer temporario e validado antes da copia.
 #            Uso: recarregar        (nao tem opcoes)
 # Entrada: $a0 = argc, $a1 = argv (ignorados). Preserva $s0-$s7.
+# ==============================================================
 
-.data
-.align 2
+.data                           # Segmento de dados
+.align 2                        # Alinha em palavra (4 bytes)
 cond_tmp:        .space 10752        # Buffer temporario (COND_TAM bytes)
-msg_carregado:   .asciiz "Dados carregados de condominio.dat\n"
-rc_sem_arq:      .asciiz "Falha: arquivo condominio.dat nao encontrado\n"
-rc_invalido:     .asciiz "Falha: arquivo condominio.dat invalido ou corrompido\n"
+msg_carregado:   .asciiz "Dados carregados de condominio.dat\n"  # Mensagem de sucesso
+rc_sem_arq:      .asciiz "Falha: arquivo condominio.dat nao encontrado\n"  # Mensagem de arquivo inexistente
+rc_invalido:     .asciiz "Falha: arquivo condominio.dat invalido ou corrompido\n"  # Mensagem de arquivo invalido
 
-.text
-cmd_recarregar:
+.text                           # Segmento de codigo
+cmd_recarregar:                 # Entrada do comando recarregar
     addi $sp, $sp, -4              # Reserva espaco na pilha
     sw   $ra, 0($sp)               # Salva o endereco de retorno
     jal  carregar_arquivo           # $v0 = 0 ok, 1 sem arquivo, 2 invalido
@@ -29,7 +31,7 @@ cmd_recarregar:
     la   $a0, rc_sem_arq           # Mensagem de arquivo inexistente
     beq  $v0, $t0, recarregar_fim  # Imprime essa mensagem
     la   $a0, rc_invalido          # Caso contrario: arquivo invalido
-recarregar_fim:
+recarregar_fim:                 # Imprime a mensagem escolhida e retorna
     jal  mmio_print_string          # Escreve a mensagem escolhida
     lw   $ra, 0($sp)               # Restaura o endereco de retorno
     addi $sp, $sp, 4               # Libera a pilha
@@ -38,7 +40,7 @@ recarregar_fim:
 # carregar_arquivo: le condominio.dat para o bloco "ap_tabela"
 # $v0 = 0 sucesso | 1 arquivo nao existe | 2 arquivo invalido
 # Em caso de erro os dados atuais ficam intactos.
-carregar_arquivo:
+carregar_arquivo:               # Entrada de carregar_arquivo (usada tambem pelo main)
     addi $sp, $sp, -8              # Reserva espaco na pilha
     sw   $ra, 0($sp)               # Salva o endereco de retorno
     sw   $s0, 4($sp)               # Salva $s0 (descritor do arquivo)
@@ -81,15 +83,15 @@ carregar_arquivo:
     li   $v0, 0                    # Retorno: sucesso
     j    carregar_ret               # Sai
 
-carregar_invalido:
+carregar_invalido:              # Arquivo invalido: fecha e retorna 2
     move $a0, $s0                  # Descritor
     li   $v0, 16                   # Syscall 16 = fechar arquivo
     syscall                         # Fecha o arquivo
     li   $v0, 2                    # Retorno: arquivo invalido
     j    carregar_ret               # Sai
-carregar_sem_arq:
+carregar_sem_arq:               # Arquivo inexistente: retorna 1
     li   $v0, 1                    # Retorno: arquivo nao existe
-carregar_ret:
+carregar_ret:                   # Epilogo: restaura registradores e retorna
     lw   $s0, 4($sp)               # Restaura $s0
     lw   $ra, 0($sp)               # Restaura o endereco de retorno
     addi $sp, $sp, 8               # Libera a pilha

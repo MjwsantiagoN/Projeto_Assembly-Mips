@@ -1,12 +1,9 @@
 # ==============================================================
-# Universidade Federal Rural de Pernambuco - UFRPE
-# Departamento de Estatistica e Informatica - DEINFO
-# Disciplina: Arquitetura e Organizacao de Computadores - 2026.2
-# Professor: Vitor A. Coutinho
-# Atividade: Projeto 01 (PE1 da 1a VA) - Assembly MIPS e MARS
-# Grupo: LBFM (Leticia, Brenno, Ferraz, Marcos)
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
+# Atividade: Projeto 01 - 1VA
+# Disciplina: Arquitetura e Organizacao de Computadores
+# Semestre letivo: 2026.2
 # Arquivo: rmvAuto.asm
-# Autor: Brenno Leite (brennolpereira@outlook.com.br)
 # Descricao: Rotinas de busca de automovel por placa (tolerante a
 #            maiusculas/minusculas) e remocao com compactacao de
 #            slots e atualizacao do registro do apartamento.
@@ -95,7 +92,7 @@ rmvAuto_busca_placa:                   # Ponto de entrada da rotina de busca de 
 
     li    $t2, 0                       # Inicializa indice de slot: i = 0
 
-busca_loop_slots:
+busca_loop_slots:               # Laco: examina um slot de veiculo por iteracao
     bge   $t2, $t0, busca_nao_encontrado # Se i >= num_veiculos, percorreu todos sem achar: falha (-1)
     nop                                # Preenche o delay slot do desvio condicional
 
@@ -107,7 +104,7 @@ busca_loop_slots:
     addiu $t6, $t5, RMV_VEIC_OFF_PLACA # $t6 = endereco da placa gravada no slot i (+36)
     li    $t7, 0                       # Inicializa indice do caractere da placa: k = 0
 
-busca_cmp_char_loop:
+busca_cmp_char_loop:            # Laco: compara a placa caractere a caractere
     li    $t8, RMV_VEIC_MAX_PLACA      # Carrega limite maximo de bytes da placa (12)
     bge   $t7, $t8, busca_slot_prox    # Se k >= 12 sem encontrar terminador, encerra comparacao deste slot
     nop                                # Preenche o delay slot do desvio condicional
@@ -126,7 +123,7 @@ busca_cmp_char_loop:
     nop                                # Preenche o delay slot do desvio condicional
     addiu $t3, $t3, -RMV_ASCII_DIFF_MAI_MIN # Converte letra minuscula para maiuscula ($t3 = $t3 - 32)
 
-busca_norm_t4:
+busca_norm_t4:                  # Normaliza o caractere procurado ($t4) para maiuscula
     # Normalizacao case-insensitive do caractere de busca ($t4) para maiuscula
     li    $t8, RMV_ASCII_A_MIN         # Carrega 'a' (97)
     blt   $t4, $t8, busca_cmp_eval     # Se $t4 < 'a', nao e letra minuscula; mantem inalterado
@@ -136,7 +133,7 @@ busca_norm_t4:
     nop                                # Preenche o delay slot do desvio condicional
     addiu $t4, $t4, -RMV_ASCII_DIFF_MAI_MIN # Converte letra minuscula para maiuscula ($t4 = $t4 - 32)
 
-busca_cmp_eval:
+busca_cmp_eval:                 # Avalia o resultado da comparacao de placas
     bne   $t3, $t4, busca_slot_prox    # Se caracteres forem diferentes, placa nao confere neste slot
     nop                                # Preenche o delay slot do desvio condicional
 
@@ -147,24 +144,24 @@ busca_cmp_eval:
     j     busca_cmp_char_loop          # Itera comparacao para o proximo caractere
     nop                                # Preenche o delay slot do salto incondicional
 
-busca_slot_prox:
+busca_slot_prox:                # Avanca para o proximo slot
     addiu $t2, $t2, 1                  # Avanca para o proximo slot (i = i + 1)
     j     busca_loop_slots             # Itera busca no proximo automovel
     nop                                # Preenche o delay slot do salto incondicional
 
-busca_sucesso:
+busca_sucesso:                  # Placa encontrada: retorna indice e endereco
     move  $v0, $t2                     # Retorna em $v0 o indice do slot encontrado (0, 1 ou 2)
     move  $v1, $t5                     # Retorna em $v1 o endereco base do slot encontrado na memoria
     jr    $ra                          # Retorna ao procedimento chamador
     nop                                # Preenche o delay slot do salto de retorno
 
-busca_nao_encontrado:
+busca_nao_encontrado:           # Placa nao encontrada: retorna -1
     li    $v0, -1                      # Define codigo de retorno -1 (automovel nao encontrado)
     li    $v1, 0                       # Zera ponteiro de retorno secundario
     jr    $ra                          # Retorna ao procedimento chamador
     nop                                # Preenche o delay slot do salto de retorno
 
-busca_err_param:
+busca_err_param:                # Parametro nulo: retorna -2
     li    $v0, -2                      # Define codigo de retorno -2 (parametro nulo)
     li    $v1, 0                       # Zera ponteiro de retorno secundario
     jr    $ra                          # Retorna ao procedimento chamador
@@ -213,7 +210,7 @@ rmvAuto_remover:                       # Ponto de entrada da rotina principal de
     move  $s4, $s2                     # Inicializa variavel de controle do laco: j = k
     addiu $t0, $s3, -1                 # $t0 = N - 1 (limite maximo para indice j)
 
-rmv_compact_loop:
+rmv_compact_loop:               # Laco: move um slot uma posicao para tras
     bge   $s4, $t0, rmv_limpar_ultimo_slot # Se j >= N - 1, translacao concluiu; passa a limpeza do ultimo slot
     nop                                # Preenche o delay slot do desvio condicional
 
@@ -256,7 +253,7 @@ rmv_compact_loop:
     j     rmv_compact_loop             # Itera para o proximo slot da fila
     nop                                # Preenche o delay slot do salto incondicional
 
-rmv_limpar_ultimo_slot:
+rmv_limpar_ultimo_slot:         # Zera o ultimo slot que continha dados
     # Passo 3: Limpeza completa do ultimo slot ocupado anteriormente (indice N - 1)
     # Garante que nao restem dados fantasmas ou duplicados na memoria liberada
     addiu $t0, $s3, -1                 # $t0 = N - 1 (indice do slot desocupado)
@@ -290,19 +287,19 @@ rmv_limpar_ultimo_slot:
 
     sw    $zero, RMV_AP_OFF_TIPO_VEICULO($s0) # Reseta tipo_veiculo para 0 (garagem totalmente vazia)
 
-rmv_finalizar_sucesso:
+rmv_finalizar_sucesso:          # Remocao concluida: retorna 0
     li    $v0, 0                       # Define codigo de retorno 0 (Sucesso na remocao e compactacao)
     li    $v1, 0                       # Zera retorno secundario
     j     rmv_restaurar_epilogo        # Salta para restauracao de contexto e retorno
     nop                                # Preenche o delay slot do salto incondicional
 
-rmv_falha_busca:
+rmv_falha_busca:                # Busca falhou (nao encontrada ou parametro nulo): repassa o codigo
     # $v0 ja contem o codigo de erro retornado pela busca (-1 ou -2)
     li    $v1, 0                       # Zera retorno secundario
     j     rmv_restaurar_epilogo        # Salta para restauracao de contexto
     nop                                # Preenche o delay slot do salto incondicional
 
-rmv_restaurar_epilogo:
+rmv_restaurar_epilogo:          # Epilogo: restaura registradores e retorna
     lw    $s4, 8($sp)                  # Restaura registrador salvo $s4
     lw    $s3, 12($sp)                 # Restaura registrador salvo $s3
     lw    $s2, 16($sp)                 # Restaura registrador salvo $s2
@@ -313,7 +310,7 @@ rmv_restaurar_epilogo:
     jr    $ra                          # Retorna ao procedimento chamador
     nop                                # Preenche o delay slot do salto de retorno
 
-rmv_err_param_direto:
+rmv_err_param_direto:           # Parametro nulo: retorna -2
     li    $v0, -2                      # Define codigo de retorno -2 (parametro nulo)
     li    $v1, 0                       # Zera retorno secundario
     jr    $ra                          # Retorna diretamente sem acessar a pilha

@@ -1,4 +1,5 @@
-# Grupo: Brenno, Joao, Leticia e Marcos
+# ==============================================================
+# Grupo: BJLM (Brenno, Joao, Leticia, Marcos)
 # Atividade: Projeto 01 - 1VA
 # Disciplina: Arquitetura e Organizacao de Computadores
 # Semestre letivo: 2026.2
@@ -8,6 +9,7 @@
 #            limparAp, infoAp e Data/*). A tabela ap_tabela fica no main.asm.
 # Obs: este arquivo deve ser incluido UMA unica vez, pelo main.asm,
 #      antes de todos os outros (.include).
+# ==============================================================
 
 # ---- Constantes gerais (.eqv funciona como um "define") ----
 .eqv N_APS          24      # 12 andares x 2 apartamentos por andar
